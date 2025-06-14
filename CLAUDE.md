@@ -21,21 +21,16 @@ npm run test:watch    # Watch mode
 npm test -- --coverage # Coverage report
 ```
 
-**Key files to test:**
-- `src/cli.ts` - Main CLI logic
-- `src/parseArguments.ts` - Argument parsing (currently unused - needs integration)
 
 ## 📁 Project Structure
 
 ```
 src/
-├── cli.ts              # Main CLI implementation
-└── parseArguments.ts   # Argument parser (needs integration)
+└── cli.ts              # Main CLI implementation
 
 tests/
 ├── e2e.test.ts        # End-to-end tests
-├── parseArguments.test.ts
-└── unit.test.ts
+└── unit.test.ts       # Unit tests
 
 dev-test/              # Local testing environment
 └── sql/              # Sample SQL files
