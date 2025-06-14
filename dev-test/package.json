@@ -1,0 +1,11 @@
+{
+  "name": "sql-agent-cli-playground",
+  "version": "1.0.0",
+  "description": "Testing playground for sql-agent-cli",
+  "scripts": {
+    "test": "echo 'Run: npx sql-agent --help'"
+  },
+  "devDependencies": {
+    "sql-agent-cli": "file:.."
+  }
+}
