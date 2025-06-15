@@ -4,8 +4,9 @@ import { config } from 'dotenv';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-// Load .env
-config();
+// Load .env from the package root (handles both root and subdirectory execution)
+const envPath = resolve(__dirname, '../.env');
+config({ path: envPath });
 
 async function main() {
   const args = process.argv.slice(2);

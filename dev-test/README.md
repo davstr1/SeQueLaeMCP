@@ -1,70 +1,75 @@
-# Supabase SQL Agent - Playground
+# SQL Agent CLI - Test Environment
 
-This is a test playground for the `sql-agent-cli` module.
+Local testing environment for `sql-agent-cli` development.
 
 ## Setup
 
-1. Copy `.env.example` to `.env` and add your Supabase DATABASE_URL:
+1. Ensure you have a `.env` file in the **root directory** (not in dev-test) with your DATABASE_URL:
    ```bash
-   cp .env.example .env
+   # From this directory:
+   cd .. && cp .env.example .env  # If needed
    ```
 
-2. Install the local module:
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-## Test Commands
+## Basic Testing
 
-### 1. Check help
-```bash
-npx sql-agent --help
-```
-
-### 2. Create tables
+### 1. Create test tables
 ```bash
 npx sql-agent file sql/create-tables.sql
 ```
 
-### 3. Seed data
+### 2. Seed test data
 ```bash
 npx sql-agent file sql/seed-data.sql
 ```
 
-### 4. Query data
+### 3. Query data
 ```bash
-# List all users
+# List users
 npx sql-agent exec "SELECT * FROM users_test_sql_agent"
 
-# List all posts
+# List posts with authors
 npx sql-agent exec "SELECT p.*, u.name as author FROM posts_test_sql_agent p JOIN users_test_sql_agent u ON p.user_id = u.id"
 
-# Count posts
-npx ssql "SELECT COUNT(*) as total_posts FROM posts_test_sql_agent"
+# JSON output
+npx sql-agent exec "SELECT * FROM users_test_sql_agent" --json
 ```
 
-### 5. Insert data
+### 4. Test CRUD operations
 ```bash
+# Insert
 npx sql-agent exec "INSERT INTO users_test_sql_agent (email, name) VALUES ('test@example.com', 'Test User') RETURNING *"
-```
 
-### 6. Update data
-```bash
-npx sql-agent exec "UPDATE posts_test_sql_agent SET published = true WHERE published = false RETURNING id, title"
-```
+# Update
+npx sql-agent exec "UPDATE posts_test_sql_agent SET published = true WHERE id = 1 RETURNING *"
 
-### 7. Delete data
-```bash
+# Delete
 npx sql-agent exec "DELETE FROM users_test_sql_agent WHERE email = 'test@example.com' RETURNING *"
 ```
 
-### 8. Test error handling
+### 5. Test error handling
 ```bash
-# This should show an error
+# Non-existent table
 npx sql-agent exec "SELECT * FROM non_existent_table"
+
+# Syntax error
+npx sql-agent exec "SELECT * FORM users_test_sql_agent"
 ```
 
-## Direct SQL (without exec)
+## Other Commands
+
 ```bash
-npx sql-agent "SELECT version()"
+npx sql-agent --help     # Show help
+npx sql-agent --version  # Show version
+```
+
+## Cleanup
+
+Drop test tables when done:
+```bash
+npx sql-agent exec "DROP TABLE IF EXISTS posts_test_sql_agent, users_test_sql_agent CASCADE"
 ```
