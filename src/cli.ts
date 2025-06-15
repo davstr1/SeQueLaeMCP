@@ -193,6 +193,37 @@ export interface SqlError extends Error {
   position?: number;
 }
 
+export class SqlAgentError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly hint?: string
+  ) {
+    super(message);
+    this.name = 'SqlAgentError';
+  }
+}
+
+export function createNoCommandError(): SqlAgentError {
+  return new SqlAgentError(
+    'No command provided',
+    'NO_COMMAND',
+    'Run sql-agent --help for usage information'
+  );
+}
+
+export function createNoSqlQueryError(): SqlAgentError {
+  return new SqlAgentError('No SQL query provided', 'NO_SQL_QUERY');
+}
+
+export function createNoFilePathError(): SqlAgentError {
+  return new SqlAgentError('No file path provided', 'NO_FILE_PATH');
+}
+
+export function createFileNotFoundError(filepath: string): SqlAgentError {
+  return new SqlAgentError(`File not found: ${filepath}`, 'FILE_NOT_FOUND');
+}
+
 export function formatSqlError(error: SqlError, jsonMode: boolean): string {
   if (jsonMode) {
     const errorOutput = {
@@ -261,11 +292,8 @@ async function main(): Promise<void> {
 
   // Handle no arguments
   if (filteredArgs.length === 0) {
-    const output = formatError(
-      'No command provided',
-      jsonMode,
-      'Run sql-agent --help for usage information'
-    );
+    const error = createNoCommandError();
+    const output = formatError(error.message, jsonMode, error.hint);
     if (jsonMode) {
       console.log(output);
     } else {

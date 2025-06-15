@@ -17,6 +17,8 @@ import {
   buildSchemaCondition,
   buildTableList,
   isDirectSqlCommand,
+  SqlAgentError,
+  createNoCommandError,
 } from '../src/cli';
 
 describe('SQL Agent Unit Tests', () => {
@@ -573,6 +575,40 @@ SELECT * FROM users;`;
 
       test('should return false for empty string', () => {
         expect(isDirectSqlCommand('')).toBe(false);
+      });
+    });
+
+    describe('SqlAgentError', () => {
+      test('should create error with message and code', () => {
+        const error = new SqlAgentError('Test error', 'TEST_CODE');
+        expect(error.message).toBe('Test error');
+        expect(error.code).toBe('TEST_CODE');
+        expect(error.name).toBe('SqlAgentError');
+        expect(error.hint).toBeUndefined();
+      });
+
+      test('should create error with message, code and hint', () => {
+        const error = new SqlAgentError('Test error', 'TEST_CODE', 'Try this instead');
+        expect(error.message).toBe('Test error');
+        expect(error.code).toBe('TEST_CODE');
+        expect(error.hint).toBe('Try this instead');
+        expect(error.name).toBe('SqlAgentError');
+      });
+
+      test('should be instanceof Error', () => {
+        const error = new SqlAgentError('Test error', 'TEST_CODE');
+        expect(error).toBeInstanceOf(Error);
+        expect(error).toBeInstanceOf(SqlAgentError);
+      });
+    });
+
+    describe('createNoCommandError', () => {
+      test('should create error with correct properties', () => {
+        const error = createNoCommandError();
+        expect(error.message).toBe('No command provided');
+        expect(error.code).toBe('NO_COMMAND');
+        expect(error.hint).toBe('Run sql-agent --help for usage information');
+        expect(error).toBeInstanceOf(SqlAgentError);
       });
     });
   });
