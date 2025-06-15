@@ -112,6 +112,27 @@ export function parseArguments(args: string[]): ParsedArguments {
   };
 }
 
+export function validateDatabaseUrl(
+  databaseUrl: string | undefined,
+  jsonMode: boolean
+): string | null {
+  if (!databaseUrl) {
+    return formatError(
+      'DATABASE_URL environment variable is not set',
+      jsonMode,
+      'Make sure you have a .env file with DATABASE_URL from your Supabase project'
+    );
+  }
+  return null;
+}
+
+export function createPool(connectionString: string): Pool {
+  return new Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+  });
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
@@ -161,20 +182,18 @@ async function main(): Promise<void> {
 
   const databaseUrl = process.env.DATABASE_URL;
 
-  if (!databaseUrl) {
+  const dbError = validateDatabaseUrl(databaseUrl, jsonMode);
+  if (dbError) {
     if (jsonMode) {
-      console.log(JSON.stringify({ error: 'DATABASE_URL environment variable is not set' }));
+      console.log(dbError);
     } else {
-      console.error('Error: DATABASE_URL environment variable is not set');
-      console.error('Make sure you have a .env file with DATABASE_URL from your Supabase project');
+      console.error(dbError);
     }
     process.exit(1);
   }
 
-  const pool = new Pool({
-    connectionString: databaseUrl,
-    ssl: { rejectUnauthorized: false },
-  });
+  // At this point, databaseUrl is guaranteed to be defined
+  const pool = createPool(databaseUrl as string);
 
   try {
     let sql: string;

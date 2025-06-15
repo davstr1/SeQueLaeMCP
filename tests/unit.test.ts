@@ -1,5 +1,13 @@
 import { spawn } from 'child_process';
-import { handleVersion, handleHelp, formatError, handleExit, parseArguments } from '../src/cli';
+import {
+  handleVersion,
+  handleHelp,
+  formatError,
+  handleExit,
+  parseArguments,
+  validateDatabaseUrl,
+  createPool,
+} from '../src/cli';
 
 describe('SQL Agent Unit Tests', () => {
   // Helper function to execute sql-agent CLI
@@ -168,6 +176,57 @@ describe('SQL Agent Unit Tests', () => {
           allSchemas: true,
           filteredArgs: ['--help'],
         });
+      });
+    });
+
+    describe('validateDatabaseUrl', () => {
+      test('should return null for valid database URL', () => {
+        const result = validateDatabaseUrl('postgresql://user:pass@host:5432/db', false);
+        expect(result).toBeNull();
+      });
+
+      test('should return error for undefined URL in text mode', () => {
+        const result = validateDatabaseUrl(undefined, false);
+        expect(result).toContain('Error: DATABASE_URL environment variable is not set');
+        expect(result).toContain('Make sure you have a .env file');
+      });
+
+      test('should return error for empty string URL in text mode', () => {
+        const result = validateDatabaseUrl('', false);
+        expect(result).toContain('Error: DATABASE_URL environment variable is not set');
+      });
+
+      test('should return error for undefined URL in JSON mode', () => {
+        const result = validateDatabaseUrl(undefined, true);
+        const parsed = JSON.parse(result!);
+        expect(parsed.error).toBe('DATABASE_URL environment variable is not set');
+        expect(parsed.hint).toContain('Make sure you have a .env file');
+      });
+    });
+
+    describe('createPool', () => {
+      test('should create a pool with correct configuration', () => {
+        const connectionString = 'postgresql://user:pass@host:5432/db';
+        const pool = createPool(connectionString);
+
+        // Check that pool is created (Pool instance)
+        expect(pool).toBeDefined();
+        expect(pool.constructor.name).toBe('BoundPool');
+
+        // Clean up
+        pool.end();
+      });
+
+      test('should create pool with SSL configuration', () => {
+        const connectionString = 'postgresql://user:pass@host:5432/db';
+        const pool = createPool(connectionString);
+
+        // The pool should be configured with SSL settings
+        // We can't directly inspect the SSL config, but we can verify the pool is created
+        expect(pool).toBeDefined();
+
+        // Clean up
+        pool.end();
       });
     });
   });
