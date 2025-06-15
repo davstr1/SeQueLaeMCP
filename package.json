@@ -1,7 +1,27 @@
 {
   "name": "sql-agent-cli",
   "version": "1.0.0",
-  "description": "Simple CLI to execute SQL on Supabase",
+  "description": "Let Claude, Cursor, and other AI agents run real SQL queries on live Postgres databases. No more copy-pasting SQL, stale schema docs, or hallucinated DB adapters — just raw, real-time access.",
+  "keywords": [
+    "cli",
+    "postgres",
+    "sql",
+    "supabase",
+    "neon",
+    "railway",
+    "cursor",
+    "cursor.ai",
+    "claude",
+    "claude-code",
+    "claude ai",
+    "ai agent",
+    "database cli",
+    "sql tool",
+    "vibe coding",
+    "devtool",
+    "developer experience",
+    "automation"
+  ],
   "bin": {
     "sql-agent": "./bin/sql-agent",
     "ssql": "./bin/sql-agent"
