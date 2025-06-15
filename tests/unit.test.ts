@@ -1,11 +1,11 @@
 import { spawn } from 'child_process';
+import { handleVersion } from '../src/cli';
 
 describe('SQL Agent Unit Tests', () => {
   // Helper function to execute sql-agent CLI
   async function execSqlAgent(
     args: string[]
   ): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
     return new Promise((resolve, reject) => {
       const binPath = require.resolve('../bin/sql-agent');
       const proc = spawn('node', [binPath, ...args], {
@@ -37,6 +37,22 @@ describe('SQL Agent Unit Tests', () => {
       proc.on('error', reject);
     });
   }
+
+  describe('Direct Function Tests', () => {
+    describe('handleVersion', () => {
+      test('should return version string in text mode', () => {
+        const result = handleVersion(false);
+        expect(result).toMatch(/^sql-agent-cli v\d+\.\d+\.\d+$/);
+      });
+
+      test('should return version object in JSON mode', () => {
+        const result = handleVersion(true);
+        const parsed = JSON.parse(result);
+        expect(parsed).toHaveProperty('version');
+        expect(parsed.version).toMatch(/^\d+\.\d+\.\d+$/);
+      });
+    });
+  });
 
   describe('CLI Argument Parsing', () => {
     test('should show help with --help flag', async () => {

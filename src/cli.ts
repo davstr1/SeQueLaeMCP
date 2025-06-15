@@ -23,6 +23,14 @@ interface Column {
 const envPath = resolve(__dirname, '../.env');
 config({ path: envPath });
 
+export function handleVersion(jsonMode: boolean): string {
+  if (jsonMode) {
+    return JSON.stringify({ version: packageJson.version });
+  } else {
+    return `sql-agent-cli v${packageJson.version}`;
+  }
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
@@ -96,11 +104,8 @@ Examples:
 
   // Handle version
   if (filteredArgs[0] === '--version' || filteredArgs[0] === '-v') {
-    if (jsonMode) {
-      console.log(JSON.stringify({ version: packageJson.version }));
-    } else {
-      console.log(`sql-agent-cli v${packageJson.version}`);
-    }
+    const output = handleVersion(jsonMode);
+    console.log(output);
     process.exit(0);
   }
 
@@ -476,13 +481,16 @@ Examples:
   process.exit(0);
 }
 
-// Run main and handle unhandled errors
-main().catch(async error => {
-  console.error(error);
-  process.exit(1);
-});
+// Only run if this module is executed directly
+if (require.main === module) {
+  // Run main and handle unhandled errors
+  main().catch(async error => {
+    console.error(error);
+    process.exit(1);
+  });
 
-// Handle process errors - ignore db termination
-process.on('unhandledRejection', () => {});
-process.on('uncaughtException', () => {});
-process.on('error', () => {});
+  // Handle process errors - ignore db termination
+  process.on('unhandledRejection', () => {});
+  process.on('uncaughtException', () => {});
+  process.on('error', () => {});
+}
