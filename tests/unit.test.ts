@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { handleVersion } from '../src/cli';
+import { handleVersion, handleHelp, formatError } from '../src/cli';
 
 describe('SQL Agent Unit Tests', () => {
   // Helper function to execute sql-agent CLI
@@ -50,6 +50,64 @@ describe('SQL Agent Unit Tests', () => {
         const parsed = JSON.parse(result);
         expect(parsed).toHaveProperty('version');
         expect(parsed.version).toMatch(/^\d+\.\d+\.\d+$/);
+      });
+    });
+
+    describe('handleHelp', () => {
+      test('should return help text in text mode', () => {
+        const result = handleHelp(false);
+        expect(result).toContain('Usage:');
+        expect(result).toContain('sql-agent exec "SQL query"');
+        expect(result).toContain('sql-agent file path/to/query.sql');
+        expect(result).toContain('Examples:');
+      });
+
+      test('should return help object in JSON mode', () => {
+        const result = handleHelp(true);
+        const parsed = JSON.parse(result);
+        expect(parsed).toHaveProperty('usage');
+        expect(parsed).toHaveProperty('examples');
+        expect(Array.isArray(parsed.usage)).toBe(true);
+        expect(Array.isArray(parsed.examples)).toBe(true);
+        expect(parsed.usage.length).toBeGreaterThan(0);
+        expect(parsed.examples.length).toBeGreaterThan(0);
+      });
+    });
+
+    describe('formatError', () => {
+      test('should format error message in text mode', () => {
+        const result = formatError('Something went wrong', false);
+        expect(result).toBe('Error: Something went wrong');
+      });
+
+      test('should format error with hint in text mode', () => {
+        const result = formatError(
+          'No command provided',
+          false,
+          'Run sql-agent --help for usage information'
+        );
+        expect(result).toBe(
+          'Error: No command provided\nRun sql-agent --help for usage information'
+        );
+      });
+
+      test('should format error as JSON in JSON mode', () => {
+        const result = formatError('Something went wrong', true);
+        const parsed = JSON.parse(result);
+        expect(parsed).toEqual({ error: 'Something went wrong' });
+      });
+
+      test('should format error with hint as JSON in JSON mode', () => {
+        const result = formatError(
+          'No command provided',
+          true,
+          'Run sql-agent --help for usage information'
+        );
+        const parsed = JSON.parse(result);
+        expect(parsed).toEqual({
+          error: 'No command provided',
+          hint: 'Run sql-agent --help for usage information',
+        });
       });
     });
   });

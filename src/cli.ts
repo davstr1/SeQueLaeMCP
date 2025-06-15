@@ -31,56 +31,29 @@ export function handleVersion(jsonMode: boolean): string {
   }
 }
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-
-  // Check for flags
-  const jsonMode = args.includes('--json');
-  const allSchemas = args.includes('--all');
-  const filteredArgs = args.filter(arg => arg !== '--json' && arg !== '--all');
-
-  // Skip header when running in Jest or JSON mode
-  if (typeof jest === 'undefined' && !jsonMode) {
-    console.log('🔗 sql-agent-cli - PostgreSQL SQL executor\n');
-  }
-
-  // Handle no arguments
-  if (filteredArgs.length === 0) {
-    if (jsonMode) {
-      console.log(JSON.stringify({ error: 'No command provided' }));
-    } else {
-      console.error('Error: No command provided');
-      console.error('Run sql-agent --help for usage information');
-    }
-    process.exit(1);
-  }
-
-  // Handle help
-  if (filteredArgs[0] === '--help' || filteredArgs[0] === '-h') {
-    if (jsonMode) {
-      console.log(
-        JSON.stringify({
-          usage: [
-            'sql-agent exec "SQL query"         Execute a SQL query',
-            'sql-agent file path/to/query.sql   Execute SQL from file',
-            'sql-agent schema                   Show all tables in public schema',
-            'sql-agent schema [tables]          Show specific table(s) - comma separated',
-            'sql-agent schema --all             Show all schemas including system tables',
-            'sql-agent exit                     Exit sql-agent',
-            'sql-agent --json                   Output results in JSON format',
-          ],
-          examples: [
-            'sql-agent exec "SELECT * FROM users"',
-            'sql-agent exec "CREATE TABLE posts (id serial primary key, title text)"',
-            'sql-agent file migrations/001_init.sql',
-            'sql-agent schema',
-            'sql-agent schema users,posts',
-            'sql-agent --json exec "SELECT * FROM users"',
-          ],
-        })
-      );
-    } else {
-      console.log(`
+export function handleHelp(jsonMode: boolean): string {
+  if (jsonMode) {
+    return JSON.stringify({
+      usage: [
+        'sql-agent exec "SQL query"         Execute a SQL query',
+        'sql-agent file path/to/query.sql   Execute SQL from file',
+        'sql-agent schema                   Show all tables in public schema',
+        'sql-agent schema [tables]          Show specific table(s) - comma separated',
+        'sql-agent schema --all             Show all schemas including system tables',
+        'sql-agent exit                     Exit sql-agent',
+        'sql-agent --json                   Output results in JSON format',
+      ],
+      examples: [
+        'sql-agent exec "SELECT * FROM users"',
+        'sql-agent exec "CREATE TABLE posts (id serial primary key, title text)"',
+        'sql-agent file migrations/001_init.sql',
+        'sql-agent schema',
+        'sql-agent schema users,posts',
+        'sql-agent --json exec "SELECT * FROM users"',
+      ],
+    });
+  } else {
+    return `
 Usage:
   sql-agent exec "SQL query"         Execute a SQL query
   sql-agent file path/to/query.sql   Execute SQL from file
@@ -97,8 +70,54 @@ Examples:
   sql-agent schema
   sql-agent schema users,posts
   sql-agent --json exec "SELECT * FROM users"
-    `);
+    `;
+  }
+}
+
+export function formatError(error: string, jsonMode: boolean, hint?: string): string {
+  if (jsonMode) {
+    return JSON.stringify({ error, ...(hint && { hint }) });
+  } else {
+    let output = `Error: ${error}`;
+    if (hint) {
+      output += `\n${hint}`;
     }
+    return output;
+  }
+}
+
+async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+
+  // Check for flags
+  const jsonMode = args.includes('--json');
+  const allSchemas = args.includes('--all');
+  const filteredArgs = args.filter(arg => arg !== '--json' && arg !== '--all');
+
+  // Skip header when running in Jest or JSON mode
+  if (typeof jest === 'undefined' && !jsonMode) {
+    console.log('🔗 sql-agent-cli - PostgreSQL SQL executor\n');
+  }
+
+  // Handle no arguments
+  if (filteredArgs.length === 0) {
+    const output = formatError(
+      'No command provided',
+      jsonMode,
+      'Run sql-agent --help for usage information'
+    );
+    if (jsonMode) {
+      console.log(output);
+    } else {
+      console.error(output);
+    }
+    process.exit(1);
+  }
+
+  // Handle help
+  if (filteredArgs[0] === '--help' || filteredArgs[0] === '-h') {
+    const output = handleHelp(jsonMode);
+    console.log(output);
     process.exit(0);
   }
 
