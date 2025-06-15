@@ -4,7 +4,8 @@ describe('SQL Agent Unit Tests', () => {
   // Helper function to execute sql-agent CLI
   async function execSqlAgent(
     args: string[]
-  ): Promise<{ stdout: string; stderr: string; code: number; json?: unknown }> {
+  ): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
+    // eslint-disable-line @typescript-eslint/no-explicit-any
     return new Promise((resolve, reject) => {
       const binPath = require.resolve('../bin/sql-agent');
       const proc = spawn('node', [binPath, ...args], {
@@ -56,8 +57,8 @@ describe('SQL Agent Unit Tests', () => {
       const result = await execSqlAgent(['--json', '--help']);
       expect(result.code).toBe(0);
       expect(result.json).toBeDefined();
-      expect(result.json.usage).toBeDefined();
-      expect(Array.isArray(result.json.usage)).toBe(true);
+      expect((result.json as any).usage).toBeDefined();
+      expect(Array.isArray((result.json as any).usage)).toBe(true);
     });
 
     test('should error when no command provided', async () => {
@@ -114,8 +115,8 @@ describe('SQL Agent Unit Tests', () => {
       const result = await execSqlAgent(['--json', 'exec']);
       expect(result.code).toBe(1);
       expect(result.json).toBeDefined();
-      expect(result.json.error).toBeDefined();
-      expect(typeof result.json.error).toBe('string');
+      expect((result.json as any).error).toBeDefined();
+      expect(typeof (result.json as any).error).toBe('string');
     });
 
     test('should output plain text errors without --json flag', async () => {
@@ -135,7 +136,7 @@ describe('SQL Agent Unit Tests', () => {
       const result = await execSqlAgent(['--json', 'file', '/tmp/non-existent-file.sql']);
       expect(result.code).toBe(1);
       expect(result.json).toBeDefined();
-      expect(result.json.error).toContain('File not found');
+      expect((result.json as any).error).toContain('File not found');
     });
   });
 
@@ -153,9 +154,9 @@ describe('SQL Agent Unit Tests', () => {
       const result = await execSqlAgent(['--json', 'exec', 'SELECT 1 as num']);
       expect(result.code).toBe(0);
       expect(result.json).toBeDefined();
-      expect(result.json.success).toBe(true);
-      expect(result.json.rows).toHaveLength(1);
-      expect(result.json.rows[0].num).toBe(1);
+      expect((result.json as any).success).toBe(true);
+      expect((result.json as any).rows).toHaveLength(1);
+      expect((result.json as any).rows[0].num).toBe(1);
     });
 
     test('should handle SQL syntax errors', async () => {
@@ -168,8 +169,8 @@ describe('SQL Agent Unit Tests', () => {
       const result = await execSqlAgent(['--json', 'exec', 'SELECT * FORM users']);
       expect(result.code).toBe(1);
       expect(result.json).toBeDefined();
-      expect(result.json.success).toBe(false);
-      expect(result.json.error).toContain('syntax error');
+      expect((result.json as any).success).toBe(false);
+      expect((result.json as any).error).toContain('syntax error');
     });
 
     test('should execute direct SQL without exec command', async () => {
