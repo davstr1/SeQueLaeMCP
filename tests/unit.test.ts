@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { handleVersion, handleHelp, formatError } from '../src/cli';
+import { handleVersion, handleHelp, formatError, handleExit, parseArguments } from '../src/cli';
 
 describe('SQL Agent Unit Tests', () => {
   // Helper function to execute sql-agent CLI
@@ -107,6 +107,66 @@ describe('SQL Agent Unit Tests', () => {
         expect(parsed).toEqual({
           error: 'No command provided',
           hint: 'Run sql-agent --help for usage information',
+        });
+      });
+    });
+
+    describe('handleExit', () => {
+      test('should return goodbye message in text mode', () => {
+        const result = handleExit(false);
+        expect(result).toBe('Goodbye!');
+      });
+
+      test('should return goodbye message as JSON in JSON mode', () => {
+        const result = handleExit(true);
+        const parsed = JSON.parse(result);
+        expect(parsed).toEqual({ message: 'Goodbye!' });
+      });
+    });
+
+    describe('parseArguments', () => {
+      test('should parse no arguments', () => {
+        const result = parseArguments([]);
+        expect(result).toEqual({
+          jsonMode: false,
+          allSchemas: false,
+          filteredArgs: [],
+        });
+      });
+
+      test('should parse --json flag', () => {
+        const result = parseArguments(['--json', 'exec', 'SELECT 1']);
+        expect(result).toEqual({
+          jsonMode: true,
+          allSchemas: false,
+          filteredArgs: ['exec', 'SELECT 1'],
+        });
+      });
+
+      test('should parse --all flag', () => {
+        const result = parseArguments(['schema', '--all']);
+        expect(result).toEqual({
+          jsonMode: false,
+          allSchemas: true,
+          filteredArgs: ['schema'],
+        });
+      });
+
+      test('should parse both --json and --all flags', () => {
+        const result = parseArguments(['--json', 'schema', '--all']);
+        expect(result).toEqual({
+          jsonMode: true,
+          allSchemas: true,
+          filteredArgs: ['schema'],
+        });
+      });
+
+      test('should filter out flags from arguments', () => {
+        const result = parseArguments(['--json', '--help', '--all']);
+        expect(result).toEqual({
+          jsonMode: true,
+          allSchemas: true,
+          filteredArgs: ['--help'],
         });
       });
     });

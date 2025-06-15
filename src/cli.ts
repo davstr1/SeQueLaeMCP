@@ -86,13 +86,37 @@ export function formatError(error: string, jsonMode: boolean, hint?: string): st
   }
 }
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+export function handleExit(jsonMode: boolean): string {
+  if (jsonMode) {
+    return JSON.stringify({ message: 'Goodbye!' });
+  } else {
+    return 'Goodbye!';
+  }
+}
 
-  // Check for flags
+export interface ParsedArguments {
+  jsonMode: boolean;
+  allSchemas: boolean;
+  filteredArgs: string[];
+}
+
+export function parseArguments(args: string[]): ParsedArguments {
   const jsonMode = args.includes('--json');
   const allSchemas = args.includes('--all');
   const filteredArgs = args.filter(arg => arg !== '--json' && arg !== '--all');
+
+  return {
+    jsonMode,
+    allSchemas,
+    filteredArgs,
+  };
+}
+
+async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+
+  // Parse arguments
+  const { jsonMode, allSchemas, filteredArgs } = parseArguments(args);
 
   // Skip header when running in Jest or JSON mode
   if (typeof jest === 'undefined' && !jsonMode) {
@@ -130,11 +154,8 @@ async function main(): Promise<void> {
 
   // Handle exit command
   if (filteredArgs[0] === 'exit' || filteredArgs[0] === 'quit') {
-    if (jsonMode) {
-      console.log(JSON.stringify({ message: 'Goodbye!' }));
-    } else {
-      console.log('Goodbye!');
-    }
+    const output = handleExit(jsonMode);
+    console.log(output);
     process.exit(0);
   }
 
