@@ -6,4 +6,5 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   clearMocks: true,
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/build/', '/coverage/'],
 };
