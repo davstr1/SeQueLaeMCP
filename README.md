@@ -14,14 +14,15 @@ Supports:
 
 ---
 
-## 🧠 The Problem It Solves
+## 🧠 The pain it Solves
 
-While working with Claude in Cursor (Pro Max subscription), I found that Claude couldn't directly interact with a real database.
+While working with Claude in Cursor, I found that Claude couldn't easily interact with a real database. It's supposed to build entire apps for you, yet when it comes time to actually build/modify/test a real DB, you find it spinning in a hamster wheel trying to build some weird SQL adapter/migration mechanism that will most likely fail. And then retry to build some nuclear reactor from space to solve that db problem.
 
-It kept trying to reinvent the wheel—generating bloated SQL adapters or mocking responses, which consumed a ton of tokens and time. I had to repeatedly paste queries manually and report results back.
+Eventually you rage-ESC and just beg for raw SQL to paste into your dashboard, then manually report the results back. (Likely with some insulting). Rinse and repeat, way too often.
 
-**`sql-agent-cli` solves this by letting you run real SQL queries instantly from the CLI**, using the same `DATABASE_URL` Claude already knows.
+And don't get me started on DB schemas that are documented somewhere but inevitably out of date after modifications. (Unless you're a maniac)
 
+**`sql-agent-cli` solves this by letting your AI run real SQL queries instantly from the CLI**, using just a `DATABASE_URL` from a root .env. Plus, it can access the real-time DB schema anytime. Say goodbye to stale schema docs!
 ---
 
 ## ⚙️ Installation
