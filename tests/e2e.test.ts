@@ -26,18 +26,18 @@ describe('SQL Agent E2E Tests', () => {
       // Add connection timeout and idle timeout
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 10000,
-      max: 5 // Limit max connections
+      max: 5, // Limit max connections
     });
-    
+
     // Handle pool errors
-    pool.on('error', (err) => {
+    pool.on('error', err => {
       // Ignore connection termination errors during shutdown
       if (err.message && err.message.includes('db_termination')) {
         return;
       }
       console.error('Unexpected pool error:', err);
     });
-    
+
     // Clean up any leftover tables from previous runs
     await pool.query(`DROP TABLE IF EXISTS ${POSTS_TABLE} CASCADE`);
     await pool.query(`DROP TABLE IF EXISTS ${USERS_TABLE} CASCADE`);
@@ -57,27 +57,29 @@ describe('SQL Agent E2E Tests', () => {
   });
 
   // Helper function to execute sql-agent CLI
-  async function execSqlAgent(args: string[]): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
+  async function execSqlAgent(
+    args: string[]
+  ): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
     return new Promise((resolve, reject) => {
       const binPath = require.resolve('../bin/sql-agent');
       // Add --json flag to all test commands
       const proc = spawn('node', [binPath, '--json', ...args], {
         cwd: process.cwd(),
-        env: { ...process.env }
+        env: { ...process.env },
       });
 
       let stdout = '';
       let stderr = '';
 
-      proc.stdout.on('data', (data) => {
+      proc.stdout.on('data', data => {
         stdout += data.toString();
       });
 
-      proc.stderr.on('data', (data) => {
+      proc.stderr.on('data', data => {
         stderr += data.toString();
       });
 
-      proc.on('close', (code) => {
+      proc.on('close', code => {
         let json;
         try {
           json = stdout ? JSON.parse(stdout) : undefined;
@@ -101,20 +103,23 @@ describe('SQL Agent E2E Tests', () => {
           created_at timestamptz DEFAULT now()
         )
       `;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(0);
       expect(result.json).toBeDefined();
       expect(result.json.success).toBe(true);
       expect(result.json.command).toContain('CREATE');
-      
+
       // Verify table exists
-      const checkTable = await pool.query(`
+      const checkTable = await pool.query(
+        `
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
           WHERE table_name = $1
         )
-      `, [USERS_TABLE]);
+      `,
+        [USERS_TABLE]
+      );
       expect(checkTable.rows[0].exists).toBe(true);
     });
 
@@ -128,7 +133,7 @@ describe('SQL Agent E2E Tests', () => {
           created_at timestamptz DEFAULT now()
         )
       `);
-      
+
       const sql = `
         CREATE TABLE IF NOT EXISTS ${POSTS_TABLE} (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -139,20 +144,23 @@ describe('SQL Agent E2E Tests', () => {
           created_at timestamptz DEFAULT now()
         )
       `;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(0);
       expect(result.json).toBeDefined();
       expect(result.json.success).toBe(true);
       expect(result.json.command).toContain('CREATE');
-      
+
       // Verify table exists and has foreign key
-      const checkTable = await pool.query(`
+      const checkTable = await pool.query(
+        `
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
           WHERE table_name = $1
         )
-      `, [POSTS_TABLE]);
+      `,
+        [POSTS_TABLE]
+      );
       expect(checkTable.rows[0].exists).toBe(true);
     });
   });
@@ -186,7 +194,7 @@ describe('SQL Agent E2E Tests', () => {
           ('bob@test.com', 'Bob Test')
         RETURNING *
       `;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(0);
       expect(JSON.stringify(result.json.rows)).toContain('alice@test.com');
@@ -196,7 +204,7 @@ describe('SQL Agent E2E Tests', () => {
 
     test('should handle duplicate email constraint', async () => {
       const sql = `INSERT INTO ${USERS_TABLE} (email, name) VALUES ('alice@test.com', 'Another Alice')`;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(1);
       expect(result.json.error).toContain('duplicate key value');
@@ -206,13 +214,13 @@ describe('SQL Agent E2E Tests', () => {
       // First get a user ID
       const user = await pool.query(`SELECT id FROM ${USERS_TABLE} WHERE email = 'alice@test.com'`);
       const userId = user.rows[0].id;
-      
+
       const sql = `
         INSERT INTO ${POSTS_TABLE} (user_id, title, content, published) VALUES
           ('${userId}', 'Test Post', 'This is a test post', true)
         RETURNING *
       `;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(0);
       expect(JSON.stringify(result.json.rows)).toContain('Test Post');
@@ -250,11 +258,14 @@ describe('SQL Agent E2E Tests', () => {
       `);
       const user = await pool.query(`SELECT id FROM ${USERS_TABLE} WHERE email = 'alice@test.com'`);
       if (user.rows.length > 0) {
-        await pool.query(`
+        await pool.query(
+          `
           INSERT INTO ${POSTS_TABLE} (user_id, title, content, published) VALUES
             ($1, 'Test Post', 'This is a test post', true)
           ON CONFLICT DO NOTHING
-        `, [user.rows[0].id]);
+        `,
+          [user.rows[0].id]
+        );
       }
     });
     test('should query users', async () => {
@@ -271,7 +282,7 @@ describe('SQL Agent E2E Tests', () => {
         FROM ${POSTS_TABLE} p 
         JOIN ${USERS_TABLE} u ON p.user_id = u.id
       `;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(0);
       expect(JSON.stringify(result.json.rows)).toContain('Test Post');
@@ -280,7 +291,7 @@ describe('SQL Agent E2E Tests', () => {
 
     test('should handle empty results', async () => {
       const sql = `SELECT * FROM ${POSTS_TABLE} WHERE title = 'Non-existent'`;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(0);
       expect(result.json.command).toContain('SELECT');
@@ -318,10 +329,13 @@ describe('SQL Agent E2E Tests', () => {
           ('alice@test.com', 'Alice Test')
       `);
       const user = await pool.query(`SELECT id FROM ${USERS_TABLE} WHERE email = 'alice@test.com'`);
-      await pool.query(`
+      await pool.query(
+        `
         INSERT INTO ${POSTS_TABLE} (user_id, title, content, published) VALUES
           ($1, 'Test Post', 'This is a test post', true)
-      `, [user.rows[0].id]);
+      `,
+        [user.rows[0].id]
+      );
     });
     test('should update posts', async () => {
       const sql = `
@@ -330,7 +344,7 @@ describe('SQL Agent E2E Tests', () => {
         WHERE title = 'Test Post'
         RETURNING *
       `;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(0);
       expect(JSON.stringify(result.json.rows)).toContain('Updated Post');
@@ -344,7 +358,7 @@ describe('SQL Agent E2E Tests', () => {
         WHERE title = 'Non-existent'
         RETURNING *
       `;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(0);
       expect(result.json.command).toContain('UPDATE');
@@ -383,14 +397,17 @@ describe('SQL Agent E2E Tests', () => {
           ('bob@test.com', 'Bob Test')
       `);
       const user = await pool.query(`SELECT id FROM ${USERS_TABLE} WHERE email = 'alice@test.com'`);
-      await pool.query(`
+      await pool.query(
+        `
         INSERT INTO ${POSTS_TABLE} (user_id, title, content, published) VALUES
           ($1, 'Updated Post', 'This is a test post', false)
-      `, [user.rows[0].id]);
+      `,
+        [user.rows[0].id]
+      );
     });
     test('should delete posts', async () => {
       const sql = `DELETE FROM ${POSTS_TABLE} WHERE title = 'Updated Post' RETURNING id`;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(0);
       expect(result.json.command).toContain('DELETE');
@@ -400,20 +417,25 @@ describe('SQL Agent E2E Tests', () => {
     test('should cascade delete when user is deleted', async () => {
       // First add a post for bob
       const user = await pool.query(`SELECT id FROM ${USERS_TABLE} WHERE email = 'bob@test.com'`);
-      await pool.query(`
+      await pool.query(
+        `
         INSERT INTO ${POSTS_TABLE} (user_id, title, content) 
         VALUES ($1, 'Bob Post', 'Content')
-      `, [user.rows[0].id]);
-      
+      `,
+        [user.rows[0].id]
+      );
+
       // Delete the user
       const sql = `DELETE FROM ${USERS_TABLE} WHERE email = 'bob@test.com' RETURNING email`;
-      
+
       const result = await execSqlAgent(['exec', sql]);
       expect(result.code).toBe(0);
       expect(JSON.stringify(result.json.rows)).toContain('bob@test.com');
-      
+
       // Verify post was cascade deleted
-      const checkPost = await pool.query(`SELECT COUNT(*) FROM ${POSTS_TABLE} WHERE title = 'Bob Post'`);
+      const checkPost = await pool.query(
+        `SELECT COUNT(*) FROM ${POSTS_TABLE} WHERE title = 'Bob Post'`
+      );
       expect(checkPost.rows[0].count).toBe('0');
     });
   });
@@ -424,11 +446,11 @@ describe('SQL Agent E2E Tests', () => {
       const fs = require('fs');
       const tmpFile = '/tmp/test-query.sql';
       fs.writeFileSync(tmpFile, `SELECT COUNT(*) as user_count FROM ${USERS_TABLE}`);
-      
+
       const result = await execSqlAgent(['file', tmpFile]);
       expect(result.code).toBe(0);
       expect(JSON.stringify(result.json.rows)).toContain('user_count');
-      
+
       // Clean up
       fs.unlinkSync(tmpFile);
     });

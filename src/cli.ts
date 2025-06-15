@@ -1,26 +1,41 @@
 #!/usr/bin/env node
 import { Pool } from 'pg';
 import { config } from 'dotenv';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
+import * as packageJson from '../package.json';
+
+interface Constraint {
+  constraint_type: string;
+  constraint_name: string;
+  column_name: string;
+}
+
+interface Column {
+  column_name: string;
+  data_type: string;
+  is_nullable: string;
+  column_default: string | null;
+  character_maximum_length: number | null;
+}
 
 // Load .env from the package root (handles both root and subdirectory execution)
 const envPath = resolve(__dirname, '../.env');
 config({ path: envPath });
 
-async function main() {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  
+
   // Check for flags
   const jsonMode = args.includes('--json');
   const allSchemas = args.includes('--all');
   const filteredArgs = args.filter(arg => arg !== '--json' && arg !== '--all');
-  
+
   // Skip header when running in Jest or JSON mode
   if (typeof jest === 'undefined' && !jsonMode) {
     console.log('🔗 sql-agent-cli - PostgreSQL SQL executor\n');
   }
-  
+
   // Handle no arguments
   if (filteredArgs.length === 0) {
     if (jsonMode) {
@@ -31,29 +46,31 @@ async function main() {
     }
     process.exit(1);
   }
-  
+
   // Handle help
   if (filteredArgs[0] === '--help' || filteredArgs[0] === '-h') {
     if (jsonMode) {
-      console.log(JSON.stringify({ 
-        usage: [
-          'sql-agent exec "SQL query"         Execute a SQL query',
-          'sql-agent file path/to/query.sql   Execute SQL from file',
-          'sql-agent schema                   Show all tables in public schema',
-          'sql-agent schema [tables]          Show specific table(s) - comma separated',
-          'sql-agent schema --all             Show all schemas including system tables',
-          'sql-agent exit                     Exit sql-agent',
-          'sql-agent --json                   Output results in JSON format'
-        ],
-        examples: [
-          'sql-agent exec "SELECT * FROM users"',
-          'sql-agent exec "CREATE TABLE posts (id serial primary key, title text)"',
-          'sql-agent file migrations/001_init.sql',
-          'sql-agent schema',
-          'sql-agent schema users,posts',
-          'sql-agent --json exec "SELECT * FROM users"'
-        ]
-      }));
+      console.log(
+        JSON.stringify({
+          usage: [
+            'sql-agent exec "SQL query"         Execute a SQL query',
+            'sql-agent file path/to/query.sql   Execute SQL from file',
+            'sql-agent schema                   Show all tables in public schema',
+            'sql-agent schema [tables]          Show specific table(s) - comma separated',
+            'sql-agent schema --all             Show all schemas including system tables',
+            'sql-agent exit                     Exit sql-agent',
+            'sql-agent --json                   Output results in JSON format',
+          ],
+          examples: [
+            'sql-agent exec "SELECT * FROM users"',
+            'sql-agent exec "CREATE TABLE posts (id serial primary key, title text)"',
+            'sql-agent file migrations/001_init.sql',
+            'sql-agent schema',
+            'sql-agent schema users,posts',
+            'sql-agent --json exec "SELECT * FROM users"',
+          ],
+        })
+      );
     } else {
       console.log(`
 Usage:
@@ -76,10 +93,9 @@ Examples:
     }
     process.exit(0);
   }
-  
+
   // Handle version
   if (filteredArgs[0] === '--version' || filteredArgs[0] === '-v') {
-    const packageJson = require('../package.json');
     if (jsonMode) {
       console.log(JSON.stringify({ version: packageJson.version }));
     } else {
@@ -99,7 +115,7 @@ Examples:
   }
 
   const databaseUrl = process.env.DATABASE_URL;
-  
+
   if (!databaseUrl) {
     if (jsonMode) {
       console.log(JSON.stringify({ error: 'DATABASE_URL environment variable is not set' }));
@@ -112,12 +128,12 @@ Examples:
 
   const pool = new Pool({
     connectionString: databaseUrl,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
   });
 
   try {
     let sql: string;
-    
+
     if (filteredArgs[0] === 'exec') {
       if (!filteredArgs[1]) {
         if (jsonMode) {
@@ -138,10 +154,9 @@ Examples:
         process.exit(1);
       }
       const filepath = resolve(process.cwd(), filteredArgs[1]);
-      
+
       // Check if file exists
-      const fs = require('fs');
-      if (!fs.existsSync(filepath)) {
+      if (!existsSync(filepath)) {
         if (jsonMode) {
           console.log(JSON.stringify({ error: `File not found: ${filepath}` }));
         } else {
@@ -149,19 +164,20 @@ Examples:
         }
         process.exit(1);
       }
-      
+
       sql = readFileSync(filepath, 'utf8');
     } else if (filteredArgs[0] === 'schema') {
       // Schema command - show database structure
       // Join all remaining arguments as they might be space-separated table names
       const specificTables = filteredArgs.slice(1).join(' '); // Could be comma-separated list
-      
+
       if (specificTables) {
         // Schema for specific tables
-        const tableList = specificTables.split(',')
+        const tableList = specificTables
+          .split(',')
           .map(t => t.trim())
           .filter(t => t.length > 0); // Remove empty strings
-        
+
         if (tableList.length === 0) {
           if (jsonMode) {
             console.log(JSON.stringify({ error: 'No table names provided' }));
@@ -170,9 +186,9 @@ Examples:
           }
           process.exit(1);
         }
-        
+
         const tableCondition = tableList.map(t => `'${t}'`).join(',');
-        
+
         sql = `
         WITH requested_tables AS (
           SELECT unnest(ARRAY[${tableCondition}]) as table_name
@@ -334,7 +350,7 @@ Examples:
       // Check if it looks like a SQL command
       const sqlKeywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER'];
       const firstWord = filteredArgs[0].toUpperCase();
-      
+
       if (sqlKeywords.includes(firstWord)) {
         // Direct SQL command
         sql = filteredArgs.join(' ');
@@ -362,52 +378,55 @@ Examples:
         command: result.command || 'Query executed',
         rowCount: result.rowCount || 0,
         rows: result.rows || [],
-        duration: duration
+        duration: duration,
       };
       console.log(JSON.stringify(output));
     } else {
       // Special handling for schema command
       if (filteredArgs[0] === 'schema' && result.rows && result.rows.length > 0) {
         console.log('DATABASE SCHEMA:\n');
-        
+
         // Separate found and missing tables
         const foundTables = result.rows.filter(r => r.type === 'found');
         const missingTables = result.rows.filter(r => r.type === 'missing');
-        
+
         // Display found tables
         for (const table of foundTables) {
           console.log(`📋 ${table.table_schema}.${table.table_name}`);
-          
+
           // Display columns
-          const columns = JSON.parse(table.columns);
+          const columns: Column[] = JSON.parse(table.columns);
           console.log('  Columns:');
           for (const col of columns) {
             const nullable = col.is_nullable === 'YES' ? ' (nullable)' : '';
-            const dataType = col.character_maximum_length 
+            const dataType = col.character_maximum_length
               ? `${col.data_type}(${col.character_maximum_length})`
               : col.data_type;
             const defaultVal = col.column_default ? ` DEFAULT ${col.column_default}` : '';
             console.log(`    - ${col.column_name}: ${dataType}${nullable}${defaultVal}`);
           }
-          
+
           // Display constraints
-          const constraints = JSON.parse(table.constraints);
+          const constraints: Constraint[] = JSON.parse(table.constraints);
           if (constraints.length > 0) {
             console.log('  Constraints:');
-            const constraintsByType = constraints.reduce((acc: any, c: any) => {
-              if (!acc[c.constraint_type]) acc[c.constraint_type] = [];
-              acc[c.constraint_type].push(c);
-              return acc;
-            }, {});
-            
+            const constraintsByType = constraints.reduce(
+              (acc: Record<string, Constraint[]>, c: Constraint) => {
+                if (!acc[c.constraint_type]) acc[c.constraint_type] = [];
+                acc[c.constraint_type].push(c);
+                return acc;
+              },
+              {}
+            );
+
             for (const [type, consts] of Object.entries(constraintsByType)) {
-              const columns = (consts as any[]).map(c => c.column_name).join(', ');
+              const columns = consts.map(c => c.column_name).join(', ');
               console.log(`    - ${type}: ${columns}`);
             }
           }
           console.log('');
         }
-        
+
         // Display missing tables with suggestions
         if (missingTables.length > 0) {
           console.log('❌ TABLES NOT FOUND:\n');
@@ -422,41 +441,43 @@ Examples:
       } else if (result.rows && result.rows.length > 0) {
         console.table(result.rows);
       }
-      
+
       // Show execution info
       const command = result.command || 'Query executed';
-      console.log(`\n✓ ${command} ${result.rowCount ? `(${result.rowCount} rows)` : ''} - ${duration}ms`);
+      console.log(
+        `\n✓ ${command} ${result.rowCount ? `(${result.rowCount} rows)` : ''} - ${duration}ms`
+      );
     }
-    
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as Error & { position?: number };
     if (jsonMode) {
       const errorOutput = {
         success: false,
-        error: error.message,
-        position: error.position
+        error: err.message,
+        position: err.position,
       };
       console.log(JSON.stringify(errorOutput));
     } else {
-      console.error('\nError:', error.message);
-      if (error.position) {
-        console.error(`Position: ${error.position}`);
+      console.error('\nError:', err.message);
+      if (err.position) {
+        console.error(`Position: ${err.position}`);
       }
     }
     await pool.end();
     process.exit(1);
   }
-  
+
   // Success - close pool and exit cleanly
   try {
     await pool.end();
-  } catch (e) {
+  } catch (_e) {
     // Ignore pool cleanup errors
   }
   process.exit(0);
 }
 
 // Run main and handle unhandled errors
-main().catch(async (error) => {
+main().catch(async error => {
   console.error(error);
   process.exit(1);
 });

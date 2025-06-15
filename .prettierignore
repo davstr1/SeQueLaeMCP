@@ -1,0 +1,9 @@
+dist/
+coverage/
+node_modules/
+*.md
+.env
+.env.*
+package-lock.json
+tsconfig.json
+*.sql

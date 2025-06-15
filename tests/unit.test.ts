@@ -4,26 +4,28 @@ import { resolve } from 'path';
 
 describe('SQL Agent Unit Tests', () => {
   // Helper function to execute sql-agent CLI
-  async function execSqlAgent(args: string[]): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
+  async function execSqlAgent(
+    args: string[]
+  ): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
     return new Promise((resolve, reject) => {
       const binPath = require.resolve('../bin/sql-agent');
       const proc = spawn('node', [binPath, ...args], {
         cwd: process.cwd(),
-        env: process.env
+        env: process.env,
       });
 
       let stdout = '';
       let stderr = '';
 
-      proc.stdout.on('data', (data) => {
+      proc.stdout.on('data', data => {
         stdout += data.toString();
       });
 
-      proc.stderr.on('data', (data) => {
+      proc.stderr.on('data', data => {
         stderr += data.toString();
       });
 
-      proc.on('close', (code) => {
+      proc.on('close', code => {
         let json;
         try {
           json = stdout ? JSON.parse(stdout) : undefined;
@@ -150,7 +152,7 @@ describe('SQL Agent Unit Tests', () => {
         return false;
       }
     };
-    
+
     test('should execute simple SELECT', async () => {
       const result = await execSqlAgent(['exec', 'SELECT 1 as num']);
       expect(result.code).toBe(0);
