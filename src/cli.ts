@@ -11,9 +11,10 @@ config({ path: envPath });
 async function main() {
   const args = process.argv.slice(2);
   
-  // Check for --json flag
+  // Check for flags
   const jsonMode = args.includes('--json');
-  const filteredArgs = args.filter(arg => arg !== '--json');
+  const allSchemas = args.includes('--all');
+  const filteredArgs = args.filter(arg => arg !== '--json' && arg !== '--all');
   
   // Skip header when running in Jest or JSON mode
   if (typeof jest === 'undefined' && !jsonMode) {
@@ -38,6 +39,8 @@ async function main() {
         usage: [
           'sql-agent exec "SQL query"         Execute a SQL query',
           'sql-agent file path/to/query.sql   Execute SQL from file',
+          'sql-agent schema                   Show database structure (public schema only)',
+          'sql-agent schema --all             Show all schemas including system tables',
           'sql-agent exit                     Exit sql-agent',
           'sql-agent --json                   Output results in JSON format'
         ],
@@ -45,6 +48,7 @@ async function main() {
           'sql-agent exec "SELECT * FROM users"',
           'sql-agent exec "CREATE TABLE posts (id serial primary key, title text)"',
           'sql-agent file migrations/001_init.sql',
+          'sql-agent schema',
           'sql-agent --json exec "SELECT * FROM users"'
         ]
       }));
@@ -53,6 +57,8 @@ async function main() {
 Usage:
   sql-agent exec "SQL query"         Execute a SQL query
   sql-agent file path/to/query.sql   Execute SQL from file
+  sql-agent schema                   Show database structure (public schema only)
+  sql-agent schema --all             Show all schemas including system tables
   sql-agent exit                     Exit sql-agent
   sql-agent --json                   Output results in JSON format
   
@@ -60,6 +66,7 @@ Examples:
   sql-agent exec "SELECT * FROM users"
   sql-agent exec "CREATE TABLE posts (id serial primary key, title text)"
   sql-agent file migrations/001_init.sql
+  sql-agent schema
   sql-agent --json exec "SELECT * FROM users"
     `);
     }
@@ -140,6 +147,59 @@ Examples:
       }
       
       sql = readFileSync(filepath, 'utf8');
+    } else if (filteredArgs[0] === 'schema') {
+      // Schema command - show database structure
+      sql = `
+        WITH table_info AS (
+          SELECT 
+            t.table_schema,
+            t.table_name,
+            json_agg(
+              json_build_object(
+                'column_name', c.column_name,
+                'data_type', c.data_type,
+                'is_nullable', c.is_nullable,
+                'column_default', c.column_default,
+                'character_maximum_length', c.character_maximum_length
+              ) ORDER BY c.ordinal_position
+            )::text as columns
+          FROM information_schema.tables t
+          JOIN information_schema.columns c 
+            ON t.table_schema = c.table_schema 
+            AND t.table_name = c.table_name
+          WHERE ${allSchemas ? "t.table_schema NOT IN ('pg_catalog', 'information_schema')" : "t.table_schema = 'public'"}
+            AND t.table_type = 'BASE TABLE'
+          GROUP BY t.table_schema, t.table_name
+        ),
+        constraint_info AS (
+          SELECT 
+            tc.table_schema,
+            tc.table_name,
+            json_agg(
+              json_build_object(
+                'constraint_name', tc.constraint_name,
+                'constraint_type', tc.constraint_type,
+                'column_name', kcu.column_name
+              )
+            )::text as constraints
+          FROM information_schema.table_constraints tc
+          JOIN information_schema.key_column_usage kcu
+            ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+          WHERE ${allSchemas ? "tc.table_schema NOT IN ('pg_catalog', 'information_schema')" : "tc.table_schema = 'public'"}
+          GROUP BY tc.table_schema, tc.table_name
+        )
+        SELECT 
+          ti.table_schema,
+          ti.table_name,
+          ti.columns,
+          COALESCE(ci.constraints, '[]') as constraints
+        FROM table_info ti
+        LEFT JOIN constraint_info ci
+          ON ti.table_schema = ci.table_schema
+          AND ti.table_name = ci.table_name
+        ORDER BY ti.table_schema, ti.table_name;
+      `;
     } else if (filteredArgs[0] === 'exec' || filteredArgs[0] === 'file') {
       // Command recognized but missing argument
       if (jsonMode) {
@@ -184,7 +244,43 @@ Examples:
       };
       console.log(JSON.stringify(output));
     } else {
-      if (result.rows && result.rows.length > 0) {
+      // Special handling for schema command
+      if (filteredArgs[0] === 'schema' && result.rows && result.rows.length > 0) {
+        console.log('DATABASE SCHEMA:\n');
+        
+        for (const table of result.rows) {
+          console.log(`📋 ${table.table_schema}.${table.table_name}`);
+          
+          // Display columns
+          const columns = JSON.parse(table.columns);
+          console.log('  Columns:');
+          for (const col of columns) {
+            const nullable = col.is_nullable === 'YES' ? ' (nullable)' : '';
+            const dataType = col.character_maximum_length 
+              ? `${col.data_type}(${col.character_maximum_length})`
+              : col.data_type;
+            const defaultVal = col.column_default ? ` DEFAULT ${col.column_default}` : '';
+            console.log(`    - ${col.column_name}: ${dataType}${nullable}${defaultVal}`);
+          }
+          
+          // Display constraints
+          const constraints = JSON.parse(table.constraints);
+          if (constraints.length > 0) {
+            console.log('  Constraints:');
+            const constraintsByType = constraints.reduce((acc: any, c: any) => {
+              if (!acc[c.constraint_type]) acc[c.constraint_type] = [];
+              acc[c.constraint_type].push(c);
+              return acc;
+            }, {});
+            
+            for (const [type, consts] of Object.entries(constraintsByType)) {
+              const columns = (consts as any[]).map(c => c.column_name).join(', ');
+              console.log(`    - ${type}: ${columns}`);
+            }
+          }
+          console.log('');
+        }
+      } else if (result.rows && result.rows.length > 0) {
         console.table(result.rows);
       }
       

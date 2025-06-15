@@ -47,6 +47,9 @@ npx sql-agent file migrations/001_init.sql
 
 # JSON output
 npx sql-agent exec "SELECT * FROM users" --json
+
+# Get full database schema (VERY USEFUL!)
+npx sql-agent schema
 ```
 
 ## 🚫 What NOT to Do

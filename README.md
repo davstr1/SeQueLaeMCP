@@ -61,12 +61,33 @@ DATABASE_URL=postgresql://[user]:[password]@[host]:[port]/[database]
 
 ### CLAUDE.md Integration
 
-Add to your `CLAUDE.md`:
+Add this section to your `CLAUDE.md` file:
 
-```markdown
+````markdown
 ## Database Access
-Use sql-agent-cli: `npx sql-agent exec "YOUR QUERY"` or `npx sql-agent file path/to/file.sql`
+
+This project has direct database access via `sql-agent-cli`.
+
+### Quick Commands
+```bash
+# Execute SQL queries
+npx sql-agent exec "SELECT * FROM users WHERE active = true"
+
+# Run SQL files
+npx sql-agent file migrations/001_init.sql
+
+# Get database schema (AI-friendly view of all tables)
+npx sql-agent schema
+
+# Export query results as JSON
+npx sql-agent exec "SELECT * FROM orders" --json > orders.json
 ```
+
+### Important Notes
+- The tool uses the DATABASE_URL from .env file
+- Only PostgreSQL databases are supported
+- Be cautious with destructive operations (DELETE, DROP, TRUNCATE)
+````
 
 ---
 
@@ -80,6 +101,15 @@ npx sql-agent exec "SELECT * FROM users"
 ### Execute from file
 ```bash
 npx sql-agent file migrations/001_init.sql
+```
+
+### Show database schema
+```bash
+# Show public schema only (default)
+npx sql-agent schema
+
+# Show all schemas including system tables
+npx sql-agent schema --all
 ```
 
 ### Other commands
@@ -108,6 +138,9 @@ npx sql-agent file migrations/001_init.sql
 
 # Export as JSON
 npx sql-agent exec "SELECT * FROM users" --json > users.json
+
+# Get database schema for AI context (public tables only)
+npx sql-agent schema
 ```
 
 ---
