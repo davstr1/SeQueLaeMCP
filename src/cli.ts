@@ -171,6 +171,83 @@ export function readSqlFile(filepath: string): string {
   return readFileSync(filepath, 'utf8');
 }
 
+export interface QueryResult {
+  command?: string;
+  rowCount?: number;
+  rows?: Record<string, unknown>[];
+  duration?: number;
+}
+
+export function formatQueryResultsJson(result: QueryResult, duration: number): string {
+  const output = {
+    success: true,
+    command: result.command || 'Query executed',
+    rowCount: result.rowCount || 0,
+    rows: result.rows || [],
+    duration: duration,
+  };
+  return JSON.stringify(output);
+}
+
+export interface SqlError extends Error {
+  position?: number;
+}
+
+export function formatSqlError(error: SqlError, jsonMode: boolean): string {
+  if (jsonMode) {
+    const errorOutput = {
+      success: false,
+      error: error.message,
+      position: error.position,
+    };
+    return JSON.stringify(errorOutput);
+  } else {
+    let output = `\nError: ${error.message}`;
+    if (error.position) {
+      output += `\nPosition: ${error.position}`;
+    }
+    return output;
+  }
+}
+
+export function formatCommandResult(
+  command: string,
+  rowCount: number | null,
+  duration: number
+): string {
+  const commandText = command || 'Query executed';
+  const rowCountText = rowCount ? `(${rowCount} rows)` : '';
+  return `\n✓ ${commandText} ${rowCountText} - ${duration}ms`;
+}
+
+export function buildSchemaCondition(allSchemas: boolean): string {
+  return allSchemas
+    ? "table_schema NOT IN ('pg_catalog', 'information_schema')"
+    : "table_schema = 'public'";
+}
+
+export function buildTableList(tables: string): string[] {
+  return tables
+    .split(',')
+    .map(t => t.trim())
+    .filter(t => t.length > 0);
+}
+
+export function isDirectSqlCommand(command: string): boolean {
+  const sqlKeywords = [
+    'SELECT',
+    'INSERT',
+    'UPDATE',
+    'DELETE',
+    'CREATE',
+    'DROP',
+    'ALTER',
+    'TRUNCATE',
+  ];
+  const upperCommand = command.toUpperCase();
+  return sqlKeywords.some(keyword => upperCommand.startsWith(keyword));
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 

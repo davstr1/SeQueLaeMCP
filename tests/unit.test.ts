@@ -11,6 +11,12 @@ import {
   validateCommandArgument,
   validateFile,
   readSqlFile,
+  formatQueryResultsJson,
+  formatSqlError,
+  formatCommandResult,
+  buildSchemaCondition,
+  buildTableList,
+  isDirectSqlCommand,
 } from '../src/cli';
 
 describe('SQL Agent Unit Tests', () => {
@@ -353,6 +359,220 @@ SELECT * FROM users;`;
           // Clean up
           fs.unlinkSync(tmpFile);
         }
+      });
+    });
+
+    describe('formatQueryResultsJson', () => {
+      test('should format query results with rows', () => {
+        const mockResult = {
+          command: 'SELECT',
+          rowCount: 2,
+          rows: [
+            { id: 1, name: 'Alice' },
+            { id: 2, name: 'Bob' },
+          ],
+        };
+        const duration = 100;
+
+        const result = formatQueryResultsJson(mockResult, duration);
+        const parsed = JSON.parse(result);
+
+        expect(parsed).toEqual({
+          success: true,
+          command: 'SELECT',
+          rowCount: 2,
+          rows: [
+            { id: 1, name: 'Alice' },
+            { id: 2, name: 'Bob' },
+          ],
+          duration: 100,
+        });
+      });
+
+      test('should format query results without rows', () => {
+        const mockResult = {
+          command: 'INSERT',
+          rowCount: 1,
+        };
+        const duration = 50;
+
+        const result = formatQueryResultsJson(mockResult, duration);
+        const parsed = JSON.parse(result);
+
+        expect(parsed).toEqual({
+          success: true,
+          command: 'INSERT',
+          rowCount: 1,
+          rows: [],
+          duration: 50,
+        });
+      });
+
+      test('should use default values for missing properties', () => {
+        const mockResult = {};
+        const duration = 75;
+
+        const result = formatQueryResultsJson(mockResult, duration);
+        const parsed = JSON.parse(result);
+
+        expect(parsed).toEqual({
+          success: true,
+          command: 'Query executed',
+          rowCount: 0,
+          rows: [],
+          duration: 75,
+        });
+      });
+    });
+
+    describe('formatSqlError', () => {
+      test('should format SQL error in text mode without position', () => {
+        const error = new Error('Syntax error in SQL query') as any;
+        const result = formatSqlError(error, false);
+        expect(result).toBe('\nError: Syntax error in SQL query');
+      });
+
+      test('should format SQL error in text mode with position', () => {
+        const error = new Error('Column "nonexistent" does not exist') as any;
+        error.position = 15;
+        const result = formatSqlError(error, false);
+        expect(result).toBe('\nError: Column "nonexistent" does not exist\nPosition: 15');
+      });
+
+      test('should format SQL error in JSON mode without position', () => {
+        const error = new Error('Table not found') as any;
+        const result = formatSqlError(error, true);
+        const parsed = JSON.parse(result);
+        expect(parsed).toEqual({
+          success: false,
+          error: 'Table not found',
+          position: undefined,
+        });
+      });
+
+      test('should format SQL error in JSON mode with position', () => {
+        const error = new Error('Invalid syntax') as any;
+        error.position = 42;
+        const result = formatSqlError(error, true);
+        const parsed = JSON.parse(result);
+        expect(parsed).toEqual({
+          success: false,
+          error: 'Invalid syntax',
+          position: 42,
+        });
+      });
+    });
+
+    describe('formatCommandResult', () => {
+      test('should format command result with row count', () => {
+        const result = formatCommandResult('SELECT', 10, 150);
+        expect(result).toBe('\n✓ SELECT (10 rows) - 150ms');
+      });
+
+      test('should format command result without row count', () => {
+        const result = formatCommandResult('CREATE TABLE', null, 75);
+        expect(result).toBe('\n✓ CREATE TABLE  - 75ms');
+      });
+
+      test('should format command result with zero row count', () => {
+        const result = formatCommandResult('DELETE', 0, 50);
+        expect(result).toBe('\n✓ DELETE  - 50ms');
+      });
+
+      test('should use default command when not provided', () => {
+        const result = formatCommandResult('', 5, 100);
+        expect(result).toBe('\n✓ Query executed (5 rows) - 100ms');
+      });
+    });
+
+    describe('buildSchemaCondition', () => {
+      test('should return public schema condition when allSchemas is false', () => {
+        const result = buildSchemaCondition(false);
+        expect(result).toBe("table_schema = 'public'");
+      });
+
+      test('should return non-system schema condition when allSchemas is true', () => {
+        const result = buildSchemaCondition(true);
+        expect(result).toBe("table_schema NOT IN ('pg_catalog', 'information_schema')");
+      });
+    });
+
+    describe('buildTableList', () => {
+      test('should split comma-separated table names', () => {
+        const result = buildTableList('users,posts,comments');
+        expect(result).toEqual(['users', 'posts', 'comments']);
+      });
+
+      test('should trim whitespace from table names', () => {
+        const result = buildTableList('users , posts , comments');
+        expect(result).toEqual(['users', 'posts', 'comments']);
+      });
+
+      test('should filter out empty strings', () => {
+        const result = buildTableList('users,,posts,');
+        expect(result).toEqual(['users', 'posts']);
+      });
+
+      test('should handle single table name', () => {
+        const result = buildTableList('users');
+        expect(result).toEqual(['users']);
+      });
+
+      test('should return empty array for empty string', () => {
+        const result = buildTableList('');
+        expect(result).toEqual([]);
+      });
+
+      test('should handle only commas', () => {
+        const result = buildTableList(',,,');
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe('isDirectSqlCommand', () => {
+      test('should return true for SELECT command', () => {
+        expect(isDirectSqlCommand('SELECT * FROM users')).toBe(true);
+        expect(isDirectSqlCommand('select * from users')).toBe(true);
+      });
+
+      test('should return true for INSERT command', () => {
+        expect(isDirectSqlCommand('INSERT INTO users VALUES (1)')).toBe(true);
+        expect(isDirectSqlCommand('insert into users values (1)')).toBe(true);
+      });
+
+      test('should return true for UPDATE command', () => {
+        expect(isDirectSqlCommand('UPDATE users SET name = "John"')).toBe(true);
+      });
+
+      test('should return true for DELETE command', () => {
+        expect(isDirectSqlCommand('DELETE FROM users WHERE id = 1')).toBe(true);
+      });
+
+      test('should return true for CREATE command', () => {
+        expect(isDirectSqlCommand('CREATE TABLE users (id INT)')).toBe(true);
+      });
+
+      test('should return true for DROP command', () => {
+        expect(isDirectSqlCommand('DROP TABLE users')).toBe(true);
+      });
+
+      test('should return true for ALTER command', () => {
+        expect(isDirectSqlCommand('ALTER TABLE users ADD COLUMN name VARCHAR')).toBe(true);
+      });
+
+      test('should return true for TRUNCATE command', () => {
+        expect(isDirectSqlCommand('TRUNCATE TABLE users')).toBe(true);
+      });
+
+      test('should return false for non-SQL commands', () => {
+        expect(isDirectSqlCommand('exec')).toBe(false);
+        expect(isDirectSqlCommand('file')).toBe(false);
+        expect(isDirectSqlCommand('schema')).toBe(false);
+        expect(isDirectSqlCommand('--help')).toBe(false);
+      });
+
+      test('should return false for empty string', () => {
+        expect(isDirectSqlCommand('')).toBe(false);
       });
     });
   });
