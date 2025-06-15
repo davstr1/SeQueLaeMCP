@@ -39,7 +39,8 @@ async function main() {
         usage: [
           'sql-agent exec "SQL query"         Execute a SQL query',
           'sql-agent file path/to/query.sql   Execute SQL from file',
-          'sql-agent schema                   Show database structure (public schema only)',
+          'sql-agent schema                   Show all tables in public schema',
+          'sql-agent schema [tables]          Show specific table(s) - comma separated',
           'sql-agent schema --all             Show all schemas including system tables',
           'sql-agent exit                     Exit sql-agent',
           'sql-agent --json                   Output results in JSON format'
@@ -49,6 +50,7 @@ async function main() {
           'sql-agent exec "CREATE TABLE posts (id serial primary key, title text)"',
           'sql-agent file migrations/001_init.sql',
           'sql-agent schema',
+          'sql-agent schema users,posts',
           'sql-agent --json exec "SELECT * FROM users"'
         ]
       }));
@@ -57,7 +59,8 @@ async function main() {
 Usage:
   sql-agent exec "SQL query"         Execute a SQL query
   sql-agent file path/to/query.sql   Execute SQL from file
-  sql-agent schema                   Show database structure (public schema only)
+  sql-agent schema                   Show all tables in public schema
+  sql-agent schema [tables]          Show specific table(s) - comma separated
   sql-agent schema --all             Show all schemas including system tables
   sql-agent exit                     Exit sql-agent
   sql-agent --json                   Output results in JSON format
@@ -67,6 +70,7 @@ Examples:
   sql-agent exec "CREATE TABLE posts (id serial primary key, title text)"
   sql-agent file migrations/001_init.sql
   sql-agent schema
+  sql-agent schema users,posts
   sql-agent --json exec "SELECT * FROM users"
     `);
     }
@@ -149,7 +153,121 @@ Examples:
       sql = readFileSync(filepath, 'utf8');
     } else if (filteredArgs[0] === 'schema') {
       // Schema command - show database structure
-      sql = `
+      // Join all remaining arguments as they might be space-separated table names
+      const specificTables = filteredArgs.slice(1).join(' '); // Could be comma-separated list
+      
+      if (specificTables) {
+        // Schema for specific tables
+        const tableList = specificTables.split(',')
+          .map(t => t.trim())
+          .filter(t => t.length > 0); // Remove empty strings
+        
+        if (tableList.length === 0) {
+          if (jsonMode) {
+            console.log(JSON.stringify({ error: 'No table names provided' }));
+          } else {
+            console.error('Error: No table names provided');
+          }
+          process.exit(1);
+        }
+        
+        const tableCondition = tableList.map(t => `'${t}'`).join(',');
+        
+        sql = `
+        WITH requested_tables AS (
+          SELECT unnest(ARRAY[${tableCondition}]) as table_name
+        ),
+        existing_tables AS (
+          SELECT table_schema, table_name 
+          FROM information_schema.tables 
+          WHERE table_type = 'BASE TABLE' 
+            AND ${allSchemas ? "table_schema NOT IN ('pg_catalog', 'information_schema')" : "table_schema = 'public'"}
+        ),
+        table_info AS (
+          SELECT 
+            t.table_schema,
+            t.table_name,
+            json_agg(
+              json_build_object(
+                'column_name', c.column_name,
+                'data_type', c.data_type,
+                'is_nullable', c.is_nullable,
+                'column_default', c.column_default,
+                'character_maximum_length', c.character_maximum_length
+              ) ORDER BY c.ordinal_position
+            )::text as columns
+          FROM information_schema.tables t
+          JOIN information_schema.columns c 
+            ON t.table_schema = c.table_schema 
+            AND t.table_name = c.table_name
+          JOIN requested_tables rt ON t.table_name = rt.table_name
+          WHERE ${allSchemas ? "t.table_schema NOT IN ('pg_catalog', 'information_schema')" : "t.table_schema = 'public'"}
+            AND t.table_type = 'BASE TABLE'
+          GROUP BY t.table_schema, t.table_name
+        ),
+        constraint_info AS (
+          SELECT 
+            tc.table_schema,
+            tc.table_name,
+            json_agg(
+              json_build_object(
+                'constraint_name', tc.constraint_name,
+                'constraint_type', tc.constraint_type,
+                'column_name', kcu.column_name
+              )
+            )::text as constraints
+          FROM information_schema.table_constraints tc
+          JOIN information_schema.key_column_usage kcu
+            ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+          JOIN requested_tables rt ON tc.table_name = rt.table_name
+          WHERE ${allSchemas ? "tc.table_schema NOT IN ('pg_catalog', 'information_schema')" : "tc.table_schema = 'public'"}
+          GROUP BY tc.table_schema, tc.table_name
+        ),
+        missing_tables AS (
+          SELECT rt.table_name as missing_table,
+                 string_agg(et.table_name, ', ') as suggestions
+          FROM requested_tables rt
+          LEFT JOIN existing_tables et ON rt.table_name = et.table_name
+          WHERE et.table_name IS NULL
+          GROUP BY rt.table_name
+        )
+        SELECT 
+          'found' as type,
+          ti.table_schema,
+          ti.table_name,
+          ti.columns,
+          COALESCE(ci.constraints, '[]') as constraints,
+          NULL as missing_table,
+          NULL as suggestions
+        FROM table_info ti
+        LEFT JOIN constraint_info ci
+          ON ti.table_schema = ci.table_schema
+          AND ti.table_name = ci.table_name
+        UNION ALL
+        SELECT 
+          'missing' as type,
+          NULL as table_schema,
+          NULL as table_name,
+          NULL as columns,
+          NULL as constraints,
+          mt.missing_table,
+          (SELECT string_agg(tn, ', ') FROM (
+             SELECT table_name as tn
+             FROM existing_tables
+             WHERE LOWER(table_name) LIKE LOWER(LEFT(mt.missing_table, 3) || '%')
+                OR LOWER(table_name) LIKE '%' || LOWER(LEFT(mt.missing_table, 3)) || '%'
+             ORDER BY 
+               CASE WHEN LOWER(table_name) LIKE LOWER(LEFT(mt.missing_table, 3) || '%') THEN 0 ELSE 1 END,
+               LENGTH(table_name)
+             LIMIT 3
+           ) s) as suggestions
+        FROM missing_tables mt
+        ORDER BY type, table_schema, table_name;
+        `;
+      } else {
+        // Show all tables
+        sql = `
         WITH table_info AS (
           SELECT 
             t.table_schema,
@@ -190,16 +308,20 @@ Examples:
           GROUP BY tc.table_schema, tc.table_name
         )
         SELECT 
+          'found' as type,
           ti.table_schema,
           ti.table_name,
           ti.columns,
-          COALESCE(ci.constraints, '[]') as constraints
+          COALESCE(ci.constraints, '[]') as constraints,
+          NULL as missing_table,
+          NULL as suggestions
         FROM table_info ti
         LEFT JOIN constraint_info ci
           ON ti.table_schema = ci.table_schema
           AND ti.table_name = ci.table_name
         ORDER BY ti.table_schema, ti.table_name;
-      `;
+        `;
+      }
     } else if (filteredArgs[0] === 'exec' || filteredArgs[0] === 'file') {
       // Command recognized but missing argument
       if (jsonMode) {
@@ -248,7 +370,12 @@ Examples:
       if (filteredArgs[0] === 'schema' && result.rows && result.rows.length > 0) {
         console.log('DATABASE SCHEMA:\n');
         
-        for (const table of result.rows) {
+        // Separate found and missing tables
+        const foundTables = result.rows.filter(r => r.type === 'found');
+        const missingTables = result.rows.filter(r => r.type === 'missing');
+        
+        // Display found tables
+        for (const table of foundTables) {
           console.log(`📋 ${table.table_schema}.${table.table_name}`);
           
           // Display columns
@@ -276,6 +403,18 @@ Examples:
             for (const [type, consts] of Object.entries(constraintsByType)) {
               const columns = (consts as any[]).map(c => c.column_name).join(', ');
               console.log(`    - ${type}: ${columns}`);
+            }
+          }
+          console.log('');
+        }
+        
+        // Display missing tables with suggestions
+        if (missingTables.length > 0) {
+          console.log('❌ TABLES NOT FOUND:\n');
+          for (const missing of missingTables) {
+            console.log(`  - "${missing.missing_table}"`);
+            if (missing.suggestions) {
+              console.log(`    Did you mean: ${missing.suggestions}?`);
             }
           }
           console.log('');

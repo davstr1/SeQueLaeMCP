@@ -27,7 +27,20 @@ npx sql-agent file sql/create-tables.sql
 npx sql-agent file sql/seed-data.sql
 ```
 
-### 3. Query data
+### 3. Explore schema
+```bash
+# View all tables
+npx sql-agent schema
+
+# View specific tables
+npx sql-agent schema users_test_sql_agent
+npx sql-agent schema users_test_sql_agent,posts_test_sql_agent
+
+# Test with misspelled names (shows suggestions)
+npx sql-agent schema userz_test
+```
+
+### 4. Query data
 ```bash
 # List users
 npx sql-agent exec "SELECT * FROM users_test_sql_agent"

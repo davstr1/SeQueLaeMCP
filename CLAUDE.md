@@ -50,6 +50,9 @@ npx sql-agent exec "SELECT * FROM users" --json
 
 # Get full database schema (VERY USEFUL!)
 npx sql-agent schema
+
+# Get schema for specific tables (more efficient)
+npx sql-agent schema users,posts
 ```
 
 ## 🚫 What NOT to Do
@@ -65,6 +68,7 @@ npx sql-agent schema
 - Handle errors explicitly with clear messages
 - Keep functions small and focused
 - TypeScript strict mode - no `any` types
+- Review and update the README.md after every modification.
 
 ## ✅ Before Committing
 

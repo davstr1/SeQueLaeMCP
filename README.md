@@ -79,6 +79,9 @@ npx sql-agent file migrations/001_init.sql
 # Get database schema (AI-friendly view of all tables)
 npx sql-agent schema
 
+# Get schema for specific tables
+npx sql-agent schema users,posts
+
 # Export query results as JSON
 npx sql-agent exec "SELECT * FROM orders" --json > orders.json
 ```
@@ -105,8 +108,17 @@ npx sql-agent file migrations/001_init.sql
 
 ### Show database schema
 ```bash
-# Show public schema only (default)
+# Show all tables in public schema
 npx sql-agent schema
+
+# Show specific tables
+npx sql-agent schema users
+npx sql-agent schema users,posts
+npx sql-agent schema users, posts   # Spaces are OK
+
+# Misspelled table? Get suggestions!
+npx sql-agent schema userz
+# Output: Table "userz" not found. Did you mean: users, users_test?
 
 # Show all schemas including system tables
 npx sql-agent schema --all
@@ -141,6 +153,9 @@ npx sql-agent exec "SELECT * FROM users" --json > users.json
 
 # Get database schema for AI context (public tables only)
 npx sql-agent schema
+
+# Get schema for specific tables (more efficient)
+npx sql-agent schema users,posts
 ```
 
 ---
