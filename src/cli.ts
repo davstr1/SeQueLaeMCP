@@ -160,6 +160,17 @@ export function validateCommandArgument(
   return null;
 }
 
+export function validateFile(filepath: string, jsonMode: boolean): string | null {
+  if (!existsSync(filepath)) {
+    return formatError(`File not found: ${filepath}`, jsonMode);
+  }
+  return null;
+}
+
+export function readSqlFile(filepath: string): string {
+  return readFileSync(filepath, 'utf8');
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 

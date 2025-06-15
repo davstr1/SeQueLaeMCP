@@ -9,6 +9,8 @@ import {
   createPool,
   getCommandInfo,
   validateCommandArgument,
+  validateFile,
+  readSqlFile,
 } from '../src/cli';
 
 describe('SQL Agent Unit Tests', () => {
@@ -289,6 +291,68 @@ describe('SQL Agent Unit Tests', () => {
         const result = validateCommandArgument(commandInfo, undefined, true);
         const parsed = JSON.parse(result!);
         expect(parsed).toEqual({ error: 'No file path provided' });
+      });
+    });
+
+    describe('validateFile', () => {
+      test('should return null for existing file', () => {
+        // Test with the test file itself
+        const result = validateFile(__filename, false);
+        expect(result).toBeNull();
+      });
+
+      test('should return error for non-existent file in text mode', () => {
+        const result = validateFile('/path/to/nonexistent/file.sql', false);
+        expect(result).toBe('Error: File not found: /path/to/nonexistent/file.sql');
+      });
+
+      test('should return error for non-existent file in JSON mode', () => {
+        const result = validateFile('/path/to/nonexistent/file.sql', true);
+        const parsed = JSON.parse(result!);
+        expect(parsed).toEqual({ error: 'File not found: /path/to/nonexistent/file.sql' });
+      });
+    });
+
+    describe('readSqlFile', () => {
+      test('should read file contents', () => {
+        // Create a temporary test file
+        const fs = require('fs');
+        const path = require('path');
+        const tmpFile = path.join(__dirname, 'test-temp.sql');
+        const testContent = 'SELECT * FROM users;';
+
+        fs.writeFileSync(tmpFile, testContent);
+
+        try {
+          const result = readSqlFile(tmpFile);
+          expect(result).toBe(testContent);
+        } finally {
+          // Clean up
+          fs.unlinkSync(tmpFile);
+        }
+      });
+
+      test('should read file with multiple lines', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const tmpFile = path.join(__dirname, 'test-multiline.sql');
+        const testContent = `-- Test SQL file
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100)
+);
+
+SELECT * FROM users;`;
+
+        fs.writeFileSync(tmpFile, testContent);
+
+        try {
+          const result = readSqlFile(tmpFile);
+          expect(result).toBe(testContent);
+        } finally {
+          // Clean up
+          fs.unlinkSync(tmpFile);
+        }
       });
     });
   });
