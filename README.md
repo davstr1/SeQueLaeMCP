@@ -22,9 +22,9 @@ Eventually you rage-ESC and just beg for raw SQL to paste into your dashboard, t
 
 And don't get me started on DB schemas that are documented somewhere but inevitably out of date after modifications. (Unless you're a maniac). How many tokens get waisted, building around an outdated schema, testing, won't work etc... ?
 
-**`sql-agent-cli` solves this by letting your AI run real SQL queries instantly from the CLI**, using just a `DATABASE_URL` from a root .env.**
+**`sql-agent-cli` solves this by letting your AI run real SQL queries instantly from the CLI**, using just a `DATABASE_URL` from a root .env.
 
-**Plus, it can access the real-time DB schema anytime. Say goodbye to stale schema docs!**
+Plus, it can access the **real-time DB schema anytime. Say goodbye to stale schema docs!**
 ---
 
 ## ⚙️ Installation
