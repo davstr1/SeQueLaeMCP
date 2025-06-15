@@ -133,6 +133,33 @@ export function createPool(connectionString: string): Pool {
   });
 }
 
+export interface CommandInfo {
+  command: string;
+  needsArgument: boolean;
+  argumentName?: string;
+}
+
+export function getCommandInfo(command: string): CommandInfo | null {
+  const commands: Record<string, CommandInfo> = {
+    exec: { command: 'exec', needsArgument: true, argumentName: 'SQL query' },
+    file: { command: 'file', needsArgument: true, argumentName: 'file path' },
+    schema: { command: 'schema', needsArgument: false },
+  };
+
+  return commands[command] || null;
+}
+
+export function validateCommandArgument(
+  commandInfo: CommandInfo,
+  argument: string | undefined,
+  jsonMode: boolean
+): string | null {
+  if (commandInfo.needsArgument && !argument) {
+    return formatError(`No ${commandInfo.argumentName} provided`, jsonMode);
+  }
+  return null;
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 

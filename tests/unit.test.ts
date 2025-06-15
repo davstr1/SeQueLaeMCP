@@ -7,6 +7,8 @@ import {
   parseArguments,
   validateDatabaseUrl,
   createPool,
+  getCommandInfo,
+  validateCommandArgument,
 } from '../src/cli';
 
 describe('SQL Agent Unit Tests', () => {
@@ -227,6 +229,66 @@ describe('SQL Agent Unit Tests', () => {
 
         // Clean up
         pool.end();
+      });
+    });
+
+    describe('getCommandInfo', () => {
+      test('should return command info for exec', () => {
+        const result = getCommandInfo('exec');
+        expect(result).toEqual({
+          command: 'exec',
+          needsArgument: true,
+          argumentName: 'SQL query',
+        });
+      });
+
+      test('should return command info for file', () => {
+        const result = getCommandInfo('file');
+        expect(result).toEqual({
+          command: 'file',
+          needsArgument: true,
+          argumentName: 'file path',
+        });
+      });
+
+      test('should return command info for schema', () => {
+        const result = getCommandInfo('schema');
+        expect(result).toEqual({
+          command: 'schema',
+          needsArgument: false,
+        });
+      });
+
+      test('should return null for unknown command', () => {
+        const result = getCommandInfo('unknown');
+        expect(result).toBeNull();
+      });
+    });
+
+    describe('validateCommandArgument', () => {
+      test('should return null for command that does not need argument', () => {
+        const commandInfo = { command: 'schema', needsArgument: false };
+        const result = validateCommandArgument(commandInfo, undefined, false);
+        expect(result).toBeNull();
+      });
+
+      test('should return null for command with required argument provided', () => {
+        const commandInfo = { command: 'exec', needsArgument: true, argumentName: 'SQL query' };
+        const result = validateCommandArgument(commandInfo, 'SELECT 1', false);
+        expect(result).toBeNull();
+      });
+
+      test('should return error for command missing required argument in text mode', () => {
+        const commandInfo = { command: 'exec', needsArgument: true, argumentName: 'SQL query' };
+        const result = validateCommandArgument(commandInfo, undefined, false);
+        expect(result).toBe('Error: No SQL query provided');
+      });
+
+      test('should return error for command missing required argument in JSON mode', () => {
+        const commandInfo = { command: 'file', needsArgument: true, argumentName: 'file path' };
+        const result = validateCommandArgument(commandInfo, undefined, true);
+        const parsed = JSON.parse(result!);
+        expect(parsed).toEqual({ error: 'No file path provided' });
       });
     });
   });
