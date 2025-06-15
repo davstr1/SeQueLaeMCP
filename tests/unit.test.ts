@@ -1,12 +1,10 @@
 import { spawn } from 'child_process';
-import { promisify } from 'util';
-import { resolve } from 'path';
 
 describe('SQL Agent Unit Tests', () => {
   // Helper function to execute sql-agent CLI
   async function execSqlAgent(
     args: string[]
-  ): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
+  ): Promise<{ stdout: string; stderr: string; code: number; json?: unknown }> {
     return new Promise((resolve, reject) => {
       const binPath = require.resolve('../bin/sql-agent');
       const proc = spawn('node', [binPath, ...args], {
@@ -29,7 +27,7 @@ describe('SQL Agent Unit Tests', () => {
         let json;
         try {
           json = stdout ? JSON.parse(stdout) : undefined;
-        } catch (e) {
+        } catch (_e) {
           // Not JSON output
         }
         resolve({ stdout, stderr, code: code || 0, json });
@@ -144,14 +142,6 @@ describe('SQL Agent Unit Tests', () => {
   describe('SQL Execution (with DATABASE_URL)', () => {
     // These tests assume DATABASE_URL is set in .env or environment
     // They will be skipped if no database is configured
-    const checkDatabase = async () => {
-      try {
-        const result = await execSqlAgent(['--json', 'exec', 'SELECT 1']);
-        return result.code === 0;
-      } catch {
-        return false;
-      }
-    };
 
     test('should execute simple SELECT', async () => {
       const result = await execSqlAgent(['exec', 'SELECT 1 as num']);

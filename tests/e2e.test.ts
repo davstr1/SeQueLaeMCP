@@ -2,7 +2,6 @@ import { Pool } from 'pg';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import { spawn } from 'child_process';
-import { promisify } from 'util';
 
 // Load .env from root
 config({ path: resolve(__dirname, '..', '.env') });
@@ -48,7 +47,7 @@ describe('SQL Agent E2E Tests', () => {
       // Clean up test tables
       await pool.query(`DROP TABLE IF EXISTS ${POSTS_TABLE} CASCADE`);
       await pool.query(`DROP TABLE IF EXISTS ${USERS_TABLE} CASCADE`);
-    } catch (error) {
+    } catch (_error) {
       // Ignore errors during cleanup
     } finally {
       // Ensure pool is properly closed
@@ -59,7 +58,7 @@ describe('SQL Agent E2E Tests', () => {
   // Helper function to execute sql-agent CLI
   async function execSqlAgent(
     args: string[]
-  ): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
+  ): Promise<{ stdout: string; stderr: string; code: number; json?: unknown }> {
     return new Promise((resolve, reject) => {
       const binPath = require.resolve('../bin/sql-agent');
       // Add --json flag to all test commands
@@ -83,7 +82,7 @@ describe('SQL Agent E2E Tests', () => {
         let json;
         try {
           json = stdout ? JSON.parse(stdout) : undefined;
-        } catch (e) {
+        } catch (_e) {
           // Not JSON output
         }
         resolve({ stdout, stderr, code: code || 0, json });

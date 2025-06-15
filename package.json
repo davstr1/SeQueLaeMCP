@@ -32,8 +32,8 @@
     "test:unit": "jest unit.test.ts",
     "test:e2e": "jest e2e.test.ts",
     "test:watch": "jest --watch",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
+    "lint": "eslint 'src/**/*.ts' 'tests/**/*.ts'",
+    "lint:fix": "eslint 'src/**/*.ts' 'tests/**/*.ts' --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepublishOnly": "npm run lint && npm run build",
@@ -61,6 +61,10 @@
   },
   "lint-staged": {
     "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "tests/**/*.ts": [
       "eslint --fix",
       "prettier --write"
     ]

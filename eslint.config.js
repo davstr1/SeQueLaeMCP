@@ -52,4 +52,50 @@ module.exports = [
       ...prettierConfig.rules,
     },
   },
+  {
+    // Test files - slightly relaxed rules
+    files: ['tests/**/*.ts'],
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+      },
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        jest: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescript,
+    },
+    rules: {
+      ...typescript.configs.recommended.rules,
+      '@typescript-eslint/no-explicit-any': 'warn', // Warn instead of error for tests
+      '@typescript-eslint/explicit-function-return-type': 'off', // Not needed in tests
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+      '@typescript-eslint/no-require-imports': 'off', // Allow require in tests
+      ...prettierConfig.rules,
+    },
+  },
 ];
