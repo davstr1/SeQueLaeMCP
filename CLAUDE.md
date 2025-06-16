@@ -12,6 +12,7 @@
 - **Language**: TypeScript (strict mode)
 - **Testing**: Jest
 - **Database**: PostgreSQL only
+- **MCP**: Model Context Protocol support
 
 ## 🧪 Testing
 
@@ -26,11 +27,20 @@ npm test -- --coverage # Coverage report
 
 ```
 src/
-└── cli.ts              # Main CLI implementation
+├── cli.ts              # Main CLI implementation
+├── core/
+│   └── sql-executor.ts # Core SQL execution logic
+├── mcp/                # MCP protocol implementation
+│   ├── index.ts        # MCP server
+│   ├── tool-definition.ts # Tool schemas
+│   └── tool-handler.ts # Tool execution
+└── bin/
+    └── sql-agent.ts    # Dual-mode entry point
 
 tests/
 ├── e2e.test.ts        # End-to-end tests
-└── unit.test.ts       # Unit tests
+├── unit.test.ts       # Unit tests
+└── mcp tests          # MCP-specific tests
 
 dev-test/              # Local testing environment
 └── sql/              # Sample SQL files
@@ -53,6 +63,9 @@ npx sql-agent schema
 
 # Get schema for specific tables (more efficient)
 npx sql-agent schema users,posts
+
+# MCP mode (for AI assistants)
+npx sql-agent --mcp
 ```
 
 ## 🚫 What NOT to Do

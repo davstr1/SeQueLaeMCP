@@ -62,6 +62,18 @@ DATABASE_URL=postgresql://[user]:[password]@[host]:[port]/[database]
 - **Neon**: `postgresql://user:[password]@host.neon.tech/dbname`
 - **Local**: `postgresql://postgres:password@localhost:5432/mydb`
 
+### 🤖 For AI Assistants (MCP Mode)
+
+```bash
+# Start in MCP mode
+npx sql-agent --mcp
+
+# Or use environment variable
+MCP_MODE=true npx sql-agent
+```
+
+This runs sql-agent as an MCP tool that AI assistants can use directly.
+
 ### CLAUDE.md Integration
 
 Add this section to your `CLAUDE.md` file:
@@ -213,6 +225,37 @@ npm test -- --coverage  # Coverage report
 - [ ] Query result export (CSV)
 - [ ] Connection pooling
 - [ ] Query validation/restrictions for production
+
+---
+
+## 🤖 MCP Mode (For AI Assistants)
+
+sql-agent-cli can run as an MCP tool, allowing AI assistants like Claude to execute SQL directly.
+
+### Quick Start
+```bash
+# Run in MCP mode
+npx sql-agent --mcp
+```
+
+### Available Tools
+- `sql_exec` - Execute SQL queries
+- `sql_file` - Execute SQL from files  
+- `sql_schema` - Get database schema
+
+### Example MCP Request
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "sql_exec",
+    "arguments": {
+      "query": "SELECT * FROM users LIMIT 5"
+    }
+  }
+}
+```
 
 ---
 

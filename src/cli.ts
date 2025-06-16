@@ -689,6 +689,9 @@ async function main(): Promise<void> {
   process.exit(0);
 }
 
+// Export main for programmatic use
+export { main };
+
 // Only run if this module is executed directly
 if (require.main === module) {
   // Run main and handle unhandled errors

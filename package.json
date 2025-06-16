@@ -1,7 +1,7 @@
 {
   "name": "sql-agent-cli",
   "version": "1.0.0",
-  "description": "Let Claude, Cursor, and other AI agents run real SQL queries on live Postgres databases. No more copy-pasting SQL, stale schema docs, or hallucinated DB adapters — just raw, real-time access.",
+  "description": "Let Claude, Cursor, and other AI agents run real SQL queries on live Postgres databases. No more copy-pasting SQL, stale schema docs, or hallucinated DB adapters — just raw, real-time access. Now with MCP support!",
   "keywords": [
     "cli",
     "postgres",
@@ -20,7 +20,9 @@
     "vibe coding",
     "devtool",
     "developer experience",
-    "automation"
+    "automation",
+    "mcp",
+    "model-context-protocol"
   ],
   "bin": {
     "sql-agent": "./bin/sql-agent",
