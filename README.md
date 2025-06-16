@@ -1,288 +1,185 @@
 # sql-agent-cli
 
-Dead-simple CLI tool that executes SQL queries on PostgreSQL databases.
+MCP-enabled PostgreSQL tool that lets AI assistants execute SQL directly. Also works as a CLI for humans.
 
-Supports:
-- Supabase
-- Neon
-- Railway (PostgreSQL)
-- Amazon RDS PostgreSQL
-- Google Cloud SQL PostgreSQL
-- Azure Database for PostgreSQL
-- Local PostgreSQL
-- Any PostgreSQL-compatible database
+## 🤖 For AI Assistants (Primary Use)
+
+sql-agent-cli implements the Model Context Protocol (MCP), allowing AI assistants like Claude to execute SQL queries directly on PostgreSQL databases.
+
+### Quick Start
+```bash
+# Install
+npm install -D sql-agent-cli
+
+# Run as MCP server
+npx sql-agent --mcp
+```
+
+### Available MCP Tools
+
+#### `sql_exec` - Execute SQL queries
+```json
+{
+  "name": "sql_exec",
+  "arguments": {
+    "query": "SELECT * FROM users WHERE active = true"
+  }
+}
+```
+
+#### `sql_schema` - Get database schema
+```json
+{
+  "name": "sql_schema",
+  "arguments": {
+    "tables": ["users", "posts"]  // Optional: specific tables
+  }
+}
+```
+
+#### `sql_file` - Execute SQL from files
+```json
+{
+  "name": "sql_file",
+  "arguments": {
+    "filepath": "migrations/001_init.sql"
+  }
+}
+```
+
+### Example MCP Session
+```json
+// Request
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"sql_exec","arguments":{"query":"SELECT COUNT(*) FROM users"}}}
+
+// Response
+{"jsonrpc":"2.0","id":1,"content":[{"type":"text","text":"{\"success\":true,\"command\":\"SELECT\",\"rowCount\":1,\"rows\":[{\"count\":42}],\"duration\":23}"}]}
+```
 
 ---
 
-## 🧠 The pain it Solves
+## 🧠 Why This Exists
 
-While working with Claude in Cursor, I found that Claude couldn't easily interact with a real database. It's supposed to build entire apps for you, yet when it comes time to actually build/modify/test a real DB, you find it spinning in a hamster wheel trying to build some weird SQL adapter/migration mechanism that will most likely fail. And then retry to build some nuclear reactor from space to solve that little db problem.
+AI assistants like Claude are supposed to build entire apps, but they can't directly query databases. This leads to:
+- 🔄 Copy-pasting SQL between AI and terminal
+- 📚 Outdated schema documentation
+- 🏗️ AI building complex DB adapters that fail
+- 😤 Frustration and wasted tokens
 
-Eventually you rage-ESC and just beg for raw SQL to paste into your dashboard, then manually report the results back. (Likely with some insulting). Rinse and repeat, way too often.
+**sql-agent-cli solves this by giving AI direct database access via MCP protocol.**
 
-And don't get me started on DB schemas that are documented somewhere but inevitably out of date after modifications. (Unless you're a maniac). How many tokens get waisted, building around an outdated schema, testing, won't work etc... ?
-
-**`sql-agent-cli` solves this by letting your AI run real SQL queries instantly from the CLI**, using just a `DATABASE_URL` from a root .env.
-
-Plus, it can access the **real-time DB schema anytime. So say goodbye to stale schema docs!**
 ---
 
-## ⚙️ Installation
+## ⚙️ Installation & Setup
 
-### NPM (Recommended)
+### 1. Install
 ```bash
 npm install -D sql-agent-cli
 ```
 
-### Global installation
-```bash
-npm install -g sql-agent-cli
-```
-
-### Development setup
-```bash
-git clone https://github.com/yourusername/sql-agent-cli
-cd sql-agent-cli
-npm install
-npm run build
-```
-
----
-
-## 🔧 Setup
-
-Create a `.env` file in your project root:
-
+### 2. Configure Database
+Create `.env` in your project root:
 ```env
 DATABASE_URL=postgresql://[user]:[password]@[host]:[port]/[database]
 ```
 
-### Provider Examples:
+**Examples:**
 - **Supabase**: `postgresql://postgres.ref:[password]@aws-0-region.pooler.supabase.com:5432/postgres`
 - **Neon**: `postgresql://user:[password]@host.neon.tech/dbname`
 - **Local**: `postgresql://postgres:password@localhost:5432/mydb`
 
-### 🤖 For AI Assistants (MCP Mode)
-
-```bash
-# Start in MCP mode
-npx sql-agent --mcp
-
-# Or use environment variable
-MCP_MODE=true npx sql-agent
-```
-
-This runs sql-agent as an MCP tool that AI assistants can use directly.
-
-### CLAUDE.md Integration
-
-Add this section to your `CLAUDE.md` file:
-
+### 3. Add to AI Instructions
+Add to your `CLAUDE.md` or AI instructions:
 ````markdown
 ## Database Access
 
-This project has direct database access via `sql-agent-cli`.
-
-### Quick Commands
-```bash
-# Execute SQL queries
-npx sql-agent exec "SELECT * FROM users WHERE active = true"
-
-# Run SQL files
-npx sql-agent file migrations/001_init.sql
-
-# Get database schema (AI-friendly view of all tables)
-npx sql-agent schema
-
-# Get schema for specific tables
-npx sql-agent schema users,posts
-
-# Export query results as JSON
-npx sql-agent exec "SELECT * FROM orders" --json > orders.json
-```
-
-### Important Notes
-- The tool uses the DATABASE_URL from .env file
-- Only PostgreSQL databases are supported
-- Be cautious with destructive operations (DELETE, DROP, TRUNCATE)
+Direct PostgreSQL access via MCP:
+- Tool: sql-agent-cli
+- Start: `npx sql-agent --mcp`
+- Queries: Use `sql_exec` tool
+- Schema: Use `sql_schema` tool
 ````
 
 ---
 
-## 🚀 Usage
+## 👤 CLI Mode (For Humans)
 
-### Execute SQL directly
+When not using MCP, sql-agent works as a traditional CLI:
+
+### Basic Commands
 ```bash
+# Execute SQL
 npx sql-agent exec "SELECT * FROM users"
-```
 
-### Execute from file
-```bash
+# Run SQL file
 npx sql-agent file migrations/001_init.sql
-```
 
-### Show database schema
-```bash
-# Show all tables in public schema
+# Get schema
 npx sql-agent schema
+npx sql-agent schema users,posts  # Specific tables
 
-# Show specific tables
-npx sql-agent schema users
-npx sql-agent schema users,posts
-npx sql-agent schema users, posts   # Spaces are OK
-
-# Misspelled table? Get suggestions!
-npx sql-agent schema userz
-# Output: Table "userz" not found. Did you mean: users, users_test?
-
-# Show all schemas including system tables
-npx sql-agent schema --all
+# JSON output
+npx sql-agent exec "SELECT * FROM users" --json
 ```
 
-### Other commands
-- `npx sql-agent --help` - Show help
-- `npx sql-agent --version` - Show version
-- `npx sql-agent exit` - Exit (for interactive environments)
-
-### JSON output mode
+### Examples
 ```bash
-npx sql-agent exec "SELECT * FROM users" --json
+# Create table
+npx sql-agent exec "CREATE TABLE posts (id serial PRIMARY KEY, title text)"
+
+# Insert data
+npx sql-agent exec "INSERT INTO posts (title) VALUES ('Hello') RETURNING *"
+
+# Export data
+npx sql-agent exec "SELECT * FROM posts" --json > posts.json
 ```
 
 ---
 
-## 📚 Common Examples
+## 🔧 Supported Databases
 
-```bash
-# Create table
-npx sql-agent exec "CREATE TABLE users (id serial PRIMARY KEY, email text UNIQUE)"
-
-# Insert data
-npx sql-agent exec "INSERT INTO users (email) VALUES ('user@example.com') RETURNING *"
-
-# Run migration
-npx sql-agent file migrations/001_init.sql
-
-# Export as JSON
-npx sql-agent exec "SELECT * FROM users" --json > users.json
-
-# Get database schema for AI context (public tables only)
-npx sql-agent schema
-
-# Get schema for specific tables (more efficient)
-npx sql-agent schema users,posts
-```
+- ✅ Supabase
+- ✅ Neon
+- ✅ Railway PostgreSQL
+- ✅ Amazon RDS PostgreSQL
+- ✅ Google Cloud SQL PostgreSQL
+- ✅ Azure Database for PostgreSQL
+- ✅ Local PostgreSQL
+- ✅ Any PostgreSQL-compatible database
 
 ---
 
 ## ⚠️ Limitations
 
-- Single database connection (no connection pooling)
-- No transaction support for multi-statement queries
 - PostgreSQL only
-- No query history or favorites
+- No connection pooling
+- No transaction support
 - SSL certificate validation disabled by default
-
-## 🔒 Security
-
-- Never commit `.env` files
-- Be cautious with destructive operations (`DROP`, `DELETE`, `TRUNCATE`)
-- Tool inherits database user permissions
-- SSL connections enabled but certificate validation is off
-
----
-
-## 🛠 Troubleshooting
-
-### Connection refused
-- Check DATABASE_URL format
-- Verify database is running
-- Check firewall/security group settings
-
-### SSL errors
-- Add `?sslmode=require` to DATABASE_URL
-- For self-signed certs: Tool accepts them by default
-
-### "relation does not exist"
-- Check you're connected to the right database
-- Verify schema/table names (case-sensitive!)
 
 ---
 
 ## 🛠 Development
 
 ```bash
-npm test          # Run tests
-npm run build     # Build project
-npm test -- --coverage  # Coverage report
+npm test              # Run tests
+npm run build         # Build TypeScript
+npm test -- --coverage # Coverage report
 ```
 
 ---
 
-## 🗺 Roadmap
+## 📚 More Documentation
 
-- [ ] Transaction support
-- [ ] Query result export (CSV)
-- [ ] Connection pooling
-- [ ] Query validation/restrictions for production
-
----
-
-## 🤖 MCP Mode (For AI Assistants)
-
-sql-agent-cli can run as an MCP tool, allowing AI assistants like Claude to execute SQL directly.
-
-### Quick Start
-```bash
-# Run in MCP mode
-npx sql-agent --mcp
-```
-
-### Available Tools
-- `sql_exec` - Execute SQL queries
-- `sql_file` - Execute SQL from files  
-- `sql_schema` - Get database schema
-
-### Example MCP Request
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "tools/call",
-  "params": {
-    "name": "sql_exec",
-    "arguments": {
-      "query": "SELECT * FROM users LIMIT 5"
-    }
-  }
-}
-```
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Run tests: `npm test`
-5. Commit: `git commit -m 'Add amazing feature'`
-6. Push: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+- [MCP Protocol Details](./MCP.md)
+- [Examples](./EXAMPLES.md)
+- [Contributing](./CONTRIBUTING.md)
 
 ---
 
 ## 📄 License
 
-MIT - see [LICENSE](LICENSE) file for details
+MIT - see [LICENSE](LICENSE) file
 
 ---
 
-## 💡 Why This Tool Exists
-
-Built by developers, for developers who are tired of:
-- Copy-pasting SQL queries between AI chat and terminal
-- Building overcomplicated database adapters for simple tasks
-- Waiting for bloated ORMs when raw SQL is faster
-- Context switching between multiple tools
-
-**sql-agent-cli** keeps it simple: one command, real results, zero friction.
+**Built for AI-first development.** No more copy-pasting SQL. No more stale schemas. Just direct database access for AI assistants.
