@@ -343,20 +343,24 @@ async function main(): Promise<void> {
 
     if (filteredArgs[0] === 'exec') {
       if (!filteredArgs[1]) {
+        const error = createNoSqlQueryError();
+        const output = formatError(error.message, jsonMode, error.hint);
         if (jsonMode) {
-          console.log(JSON.stringify({ error: 'No SQL query provided' }));
+          console.log(output);
         } else {
-          console.error('Error: No SQL query provided');
+          console.error(output);
         }
         process.exit(1);
       }
       sql = filteredArgs[1];
     } else if (filteredArgs[0] === 'file') {
       if (!filteredArgs[1]) {
+        const error = createNoFilePathError();
+        const output = formatError(error.message, jsonMode, error.hint);
         if (jsonMode) {
-          console.log(JSON.stringify({ error: 'No file path provided' }));
+          console.log(output);
         } else {
-          console.error('Error: No file path provided');
+          console.error(output);
         }
         process.exit(1);
       }
@@ -364,10 +368,12 @@ async function main(): Promise<void> {
 
       // Check if file exists
       if (!existsSync(filepath)) {
+        const error = createFileNotFoundError(filepath);
+        const output = formatError(error.message, jsonMode, error.hint);
         if (jsonMode) {
-          console.log(JSON.stringify({ error: `File not found: ${filepath}` }));
+          console.log(output);
         } else {
-          console.error(`Error: File not found: ${filepath}`);
+          console.error(output);
         }
         process.exit(1);
       }

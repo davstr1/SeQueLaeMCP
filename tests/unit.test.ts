@@ -19,6 +19,9 @@ import {
   isDirectSqlCommand,
   SqlAgentError,
   createNoCommandError,
+  createNoSqlQueryError,
+  createNoFilePathError,
+  createFileNotFoundError,
 } from '../src/cli';
 
 describe('SQL Agent Unit Tests', () => {
@@ -609,6 +612,41 @@ SELECT * FROM users;`;
         expect(error.code).toBe('NO_COMMAND');
         expect(error.hint).toBe('Run sql-agent --help for usage information');
         expect(error).toBeInstanceOf(SqlAgentError);
+      });
+    });
+
+    describe('createNoSqlQueryError', () => {
+      test('should create error with correct properties', () => {
+        const error = createNoSqlQueryError();
+        expect(error.message).toBe('No SQL query provided');
+        expect(error.code).toBe('NO_SQL_QUERY');
+        expect(error.hint).toBeUndefined();
+        expect(error).toBeInstanceOf(SqlAgentError);
+      });
+    });
+
+    describe('createNoFilePathError', () => {
+      test('should create error with correct properties', () => {
+        const error = createNoFilePathError();
+        expect(error.message).toBe('No file path provided');
+        expect(error.code).toBe('NO_FILE_PATH');
+        expect(error.hint).toBeUndefined();
+        expect(error).toBeInstanceOf(SqlAgentError);
+      });
+    });
+
+    describe('createFileNotFoundError', () => {
+      test('should create error with correct properties', () => {
+        const error = createFileNotFoundError('/path/to/missing.sql');
+        expect(error.message).toBe('File not found: /path/to/missing.sql');
+        expect(error.code).toBe('FILE_NOT_FOUND');
+        expect(error.hint).toBeUndefined();
+        expect(error).toBeInstanceOf(SqlAgentError);
+      });
+
+      test('should include file path in error message', () => {
+        const error = createFileNotFoundError('/another/file.sql');
+        expect(error.message).toBe('File not found: /another/file.sql');
       });
     });
   });
