@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { PoolManager } from '../src/core/pool-manager';
 import {
   handleVersion,
   handleHelp,
@@ -925,6 +926,87 @@ SELECT * FROM users;`;
         expect(parsed.usage).toContainEqual(expect.stringContaining('sequelae backup'));
         expect(parsed.examples).toContainEqual(expect.stringContaining('sequelae backup --output'));
       });
+    });
+  });
+});
+
+describe('PoolManager', () => {
+  let poolManager: PoolManager;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    PoolManager.reset();
+    poolManager = PoolManager.getInstance();
+  });
+
+  describe('basic functionality', () => {
+    test('should initialize pool with config', () => {
+      poolManager.initialize({
+        connectionString: 'postgresql://test@localhost/test',
+        maxConnections: 20,
+        idleTimeoutMillis: 5000,
+      });
+
+      expect(poolManager.isInitialized()).toBe(true);
+    });
+
+    test('should return pool status', () => {
+      poolManager.initialize({
+        connectionString: 'postgresql://test@localhost/test',
+      });
+
+      const status = poolManager.getStatus();
+      expect(status.initialized).toBe(true);
+      expect(status.maxConnections).toBe(10);
+      expect(status.idleTimeout).toBe(10000);
+    });
+
+    test('should handle pool not initialized error', () => {
+      expect(() => poolManager.getPool()).toThrow('Pool not initialized');
+    });
+  });
+
+  describe('retry logic', () => {
+    test('should retry on connection failure', async () => {
+      const mockPool = {
+        connect: jest
+          .fn()
+          .mockRejectedValueOnce(new Error('Connection failed'))
+          .mockRejectedValueOnce(new Error('Connection failed'))
+          .mockResolvedValueOnce({ release: jest.fn() }),
+        on: jest.fn(),
+        totalCount: 0,
+        idleCount: 0,
+        waitingCount: 0,
+      };
+
+      poolManager.initialize({
+        connectionString: 'postgresql://test@localhost/test',
+      });
+
+      // Override the pool
+      (poolManager as any).pool = mockPool;
+
+      const client = await poolManager.getClient();
+
+      expect(mockPool.connect).toHaveBeenCalledTimes(3);
+      expect(client).toBeDefined();
+    });
+
+    test('should throw after max retries', async () => {
+      const mockPool = {
+        connect: jest.fn().mockRejectedValue(new Error('Connection failed')),
+        on: jest.fn(),
+      };
+
+      poolManager.initialize({
+        connectionString: 'postgresql://test@localhost/test',
+      });
+
+      (poolManager as any).pool = mockPool;
+
+      await expect(poolManager.getClient(2, 10)).rejects.toThrow('Connection failed');
+      expect(mockPool.connect).toHaveBeenCalledTimes(2);
     });
   });
 });
