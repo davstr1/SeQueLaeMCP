@@ -123,10 +123,10 @@
 - [x] Document health check usage
 
 ### 13. Implement Rate Limiting
-- [ ] Add rate limiter for MCP mode
-- [ ] Configure limits per tool
-- [ ] Add rate limit headers
-- [ ] Document rate limits
+- [x] Add rate limiter for MCP mode
+- [x] Configure limits per tool
+- [x] Add rate limit headers
+- [x] Document rate limits
 
 ### 14. Update Dev Dependencies
 - [ ] Update @types/jest to v30

@@ -5,6 +5,7 @@
 
 import { SQL_AGENT_TOOLS } from './tool-definition';
 import { McpToolHandler } from './tool-handler';
+import { RateLimiter, RateLimiterOptions } from '../utils/rate-limiter';
 
 export interface McpServerInfo {
   name: string;
@@ -22,9 +23,20 @@ export interface McpToolsListResponse {
 
 export class SqlAgentMcpServer {
   private handler: McpToolHandler;
+  private rateLimiter?: RateLimiter;
+  private cleanupInterval?: NodeJS.Timeout;
 
-  constructor() {
+  constructor(rateLimiterOptions?: RateLimiterOptions) {
     this.handler = new McpToolHandler();
+
+    // Initialize rate limiter if options provided
+    if (rateLimiterOptions) {
+      this.rateLimiter = new RateLimiter(rateLimiterOptions);
+      // Clean up expired records every minute
+      this.cleanupInterval = setInterval(() => {
+        this.rateLimiter?.cleanup();
+      }, 60000);
+    }
   }
 
   /**
@@ -85,6 +97,27 @@ export class SqlAgentMcpServer {
         case 'tools/call':
           if (!params || !params.name || !params.arguments) {
             throw new Error('Invalid tool call parameters');
+          }
+
+          // Check rate limit if enabled
+          if (this.rateLimiter) {
+            // Use a connection identifier (could be enhanced with actual connection ID)
+            const identifier = 'default'; // In real implementation, this would be from connection context
+            const toolName = params.name as string;
+            const limitCheck = this.rateLimiter.checkLimit(identifier, toolName);
+
+            if (!limitCheck.allowed) {
+              return {
+                error: {
+                  code: -32000,
+                  message: 'Rate limit exceeded',
+                  data: {
+                    retryAfter: limitCheck.retryAfter,
+                    usage: this.rateLimiter.getUsage(identifier),
+                  },
+                },
+              };
+            }
           }
 
           return await this.handler.handleToolCall({
@@ -163,6 +196,10 @@ export class SqlAgentMcpServer {
    * Close the server and cleanup
    */
   async close(): Promise<void> {
+    // Clear rate limiter cleanup interval
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
     await this.handler.close();
   }
 }

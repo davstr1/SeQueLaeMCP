@@ -40,12 +40,13 @@ describe('SqlAgentMcpServer', () => {
     test('should return all available tools', () => {
       const response = server.listTools();
 
-      expect(response.tools).toHaveLength(4);
+      expect(response.tools).toHaveLength(5);
       expect(response.tools.map(t => t.name)).toEqual([
         'sql_exec',
         'sql_file',
         'sql_schema',
         'sql_backup',
+        'sql_health',
       ]);
 
       // Check first tool structure
@@ -90,7 +91,7 @@ describe('SqlAgentMcpServer', () => {
       const response = await server.handleRequest(request);
 
       expect(response).toHaveProperty('tools');
-      expect((response as any).tools).toHaveLength(4);
+      expect((response as any).tools).toHaveLength(5);
     });
 
     test('should handle tools/call request', async () => {
@@ -180,6 +181,83 @@ describe('SqlAgentMcpServer', () => {
           message: 'Database connection failed',
         },
       });
+    });
+  });
+
+  describe('Rate limiting', () => {
+    test('should enforce rate limits when configured', async () => {
+      // Create server with rate limiting
+      const rateLimitedServer = new SqlAgentMcpServer({
+        maxRequests: 2,
+        windowMs: 60000,
+      });
+
+      // Mock the handler
+      const mockRateLimitedHandler = {
+        handleToolCall: jest.fn().mockResolvedValue({
+          content: [{ type: 'text' as const, text: 'Success' }],
+        }),
+        close: jest.fn(),
+      } as any;
+      (rateLimitedServer as any).handler = mockRateLimitedHandler;
+
+      // First two requests should succeed
+      for (let i = 0; i < 2; i++) {
+        const response = await rateLimitedServer.handleRequest({
+          method: 'tools/call',
+          params: {
+            name: 'sql_exec',
+            arguments: { query: 'SELECT 1' },
+          },
+        });
+        expect(response).not.toHaveProperty('error');
+      }
+
+      // Third request should be rate limited
+      const response = await rateLimitedServer.handleRequest({
+        method: 'tools/call',
+        params: {
+          name: 'sql_exec',
+          arguments: { query: 'SELECT 1' },
+        },
+      });
+
+      expect(response).toMatchObject({
+        error: {
+          code: -32000,
+          message: 'Rate limit exceeded',
+          data: {
+            retryAfter: expect.any(Number),
+            usage: expect.objectContaining({
+              global: expect.objectContaining({
+                used: 2,
+                limit: 2,
+              }),
+            }),
+          },
+        },
+      });
+
+      await rateLimitedServer.close();
+    });
+
+    test('should not rate limit when not configured', async () => {
+      // Mock successful response
+      mockHandler.handleToolCall.mockResolvedValue({
+        content: [{ type: 'text' as const, text: 'Success' }],
+      });
+
+      // Server without rate limiting (default behavior)
+      const response = await server.handleRequest({
+        method: 'tools/call',
+        params: {
+          name: 'sql_exec',
+          arguments: { query: 'SELECT 1' },
+        },
+      });
+
+      expect(mockHandler.handleToolCall).toHaveBeenCalled();
+      expect(response).not.toHaveProperty('error');
     });
   });
 

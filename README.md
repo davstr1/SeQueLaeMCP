@@ -110,6 +110,11 @@ DATABASE_URL=postgresql://[user]:[password]@[host]:[port]/[database]
 # Optional SSL Configuration
 POSTGRES_SSL_MODE=require                # disable, require (default), verify-ca, verify-full
 POSTGRES_SSL_REJECT_UNAUTHORIZED=true    # true (default) or false for self-signed certs
+
+# Optional Rate Limiting (MCP mode only)
+MCP_RATE_LIMIT_MAX_REQUESTS=100         # Max requests per window (default: unlimited)
+MCP_RATE_LIMIT_WINDOW_MS=60000          # Time window in ms (default: 60000)
+MCP_RATE_LIMIT_TOOLS='{"sql_exec":{"maxRequests":50,"windowMs":60000}}'  # Tool-specific limits
 ```
 
 **Examples:**
