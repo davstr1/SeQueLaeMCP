@@ -1,5 +1,4 @@
 import { SqlExecutor } from '../src/core/sql-executor';
-import { Pool } from 'pg';
 
 // Create mocks that can be accessed in tests
 const mockClient = {
@@ -42,7 +41,7 @@ describe('Edge Case Tests', () => {
 
     process.env.DATABASE_URL = 'postgresql://test:test@localhost/test';
     executor = new SqlExecutor(process.env.DATABASE_URL);
-    mockPool.connect.mockResolvedValue(mockClient);
+    // Don't set default - let each test configure as needed
   });
 
   afterEach(async () => {
@@ -74,6 +73,7 @@ describe('Edge Case Tests', () => {
         ],
       };
 
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       mockQueryWithTransaction(largeResult);
 
       const result = await executor.executeQuery('SELECT * FROM large_table');
@@ -110,6 +110,7 @@ describe('Edge Case Tests', () => {
         fields: columns,
       };
 
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       mockQueryWithTransaction(wideResult);
 
       const result = await executor.executeQuery('SELECT * FROM wide_table');
@@ -130,6 +131,7 @@ describe('Edge Case Tests', () => {
         ],
       };
 
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       mockQueryWithTransaction(emptyResult);
 
       const result = await executor.executeQuery('SELECT * FROM users WHERE 1=0');
@@ -144,21 +146,26 @@ describe('Edge Case Tests', () => {
     test('should handle multiple queries in parallel', async () => {
       const queries = ['SELECT 1', 'SELECT 2', 'SELECT 3', 'SELECT 4', 'SELECT 5'];
 
-      // Mock different results for each query - need to set up all mocks in advance
-      const allMocks: any[] = [];
-      queries.forEach((_, i) => {
-        allMocks.push({ command: 'BEGIN' });
-        allMocks.push({
-          command: 'SELECT',
-          rowCount: 1,
-          rows: [{ result: i + 1 }],
-          fields: [{ name: 'result', dataTypeID: 23 }],
-        });
-        allMocks.push({ command: 'COMMIT' });
-      });
+      // Create separate mock clients for each parallel connection
+      const mockClients = queries.map((_, i) => ({
+        query: jest
+          .fn()
+          .mockResolvedValueOnce({ command: 'BEGIN' })
+          .mockResolvedValueOnce({
+            command: 'SELECT',
+            rowCount: 1,
+            rows: [{ result: i + 1 }],
+            fields: [{ name: 'result', dataTypeID: 23 }],
+          })
+          .mockResolvedValueOnce({ command: 'COMMIT' }),
+        release: jest.fn(),
+        on: jest.fn(),
+      }));
 
-      allMocks.forEach(mock => {
-        mockClient.query.mockResolvedValueOnce(mock);
+      // Set up pool.connect to return different clients for each connection
+      let clientIndex = 0;
+      mockPool.connect.mockImplementation(() => {
+        return Promise.resolve(mockClients[clientIndex++]);
       });
 
       // Execute all queries in parallel
@@ -176,11 +183,34 @@ describe('Edge Case Tests', () => {
     });
 
     test('should handle connection pool exhaustion gracefully', async () => {
-      // Simulate pool exhaustion
+      // Create separate clients for the two successful connections
+      const client1 = {
+        query: jest
+          .fn()
+          .mockResolvedValueOnce({ command: 'BEGIN' })
+          .mockResolvedValueOnce({ command: 'SELECT', rowCount: 1, rows: [{ result: 1 }] })
+          .mockResolvedValueOnce({ command: 'COMMIT' }),
+        release: jest.fn(),
+        on: jest.fn(),
+      };
+
+      const client2 = {
+        query: jest
+          .fn()
+          .mockResolvedValueOnce({ command: 'BEGIN' })
+          .mockResolvedValueOnce({ command: 'SELECT', rowCount: 1, rows: [{ result: 2 }] })
+          .mockResolvedValueOnce({ command: 'COMMIT' }),
+        release: jest.fn(),
+        on: jest.fn(),
+      };
+
+      // Simulate pool exhaustion - first two succeed, third fails
       mockPool.connect
-        .mockResolvedValueOnce(mockClient)
-        .mockResolvedValueOnce(mockClient)
-        .mockRejectedValueOnce(new Error('Connection pool timeout'));
+        .mockResolvedValueOnce(client1)
+        .mockResolvedValueOnce(client2)
+        .mockRejectedValueOnce(new Error('Connection pool timeout'))
+        .mockRejectedValueOnce(new Error('Connection pool timeout')) // For retry
+        .mockRejectedValueOnce(new Error('Connection pool timeout')); // For second retry
 
       const promises = [
         executor.executeQuery('SELECT 1'),
@@ -203,6 +233,7 @@ describe('Edge Case Tests', () => {
   describe('Timeout Scenarios', () => {
     test('should handle query timeout', async () => {
       // Simulate a query that times out
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       mockClient.query.mockRejectedValueOnce(new Error('Query timeout after 5000ms'));
 
       await expect(executor.executeQuery('SELECT pg_sleep(10)', true, 5000)).rejects.toThrow(
@@ -225,6 +256,8 @@ describe('Edge Case Tests', () => {
         fields: [{ name: 'result', dataTypeID: 23 }],
       };
 
+      // Ensure mockPool.connect returns mockClient
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       mockQueryWithTransaction(fastResult);
 
       const result = await executor.executeQuery('SELECT 42', true, 5000);
@@ -236,24 +269,36 @@ describe('Edge Case Tests', () => {
 
   describe('Connection Failures', () => {
     test('should handle invalid connection string', async () => {
-      // const badExecutor = new SqlExecutor('invalid://connection'); - not used
+      // Reset pool manager and create new executor with invalid connection
+      const { PoolManager } = require('../src/core/pool-manager');
+      PoolManager.reset();
 
-      // Mock constructor to throw
-      (Pool as jest.MockedClass<typeof Pool>).mockImplementationOnce(() => {
-        throw new Error('Invalid connection string');
-      });
+      const badExecutor = new SqlExecutor('invalid://connection');
 
-      // Executor creation should fail
-      expect(() => new SqlExecutor('invalid://connection')).toThrow();
+      // Mock pool to throw on connect
+      mockPool.connect.mockRejectedValueOnce(new Error('Invalid connection string'));
+
+      // Query should fail with connection error
+      await expect(badExecutor.executeQuery('SELECT 1')).rejects.toThrow(
+        'Invalid connection string'
+      );
     });
 
     test('should handle network timeouts', async () => {
+      // Reset mocks
+      mockClient.query.mockClear();
+      mockPool.connect.mockClear();
+
       mockPool.connect.mockRejectedValueOnce(new Error('ETIMEDOUT'));
 
       await expect(executor.executeQuery('SELECT 1')).rejects.toThrow('ETIMEDOUT');
     });
 
     test('should handle authentication failures', async () => {
+      // Reset mocks
+      mockClient.query.mockClear();
+      mockPool.connect.mockClear();
+
       mockPool.connect.mockRejectedValueOnce(
         new Error('password authentication failed for user "test"')
       );
@@ -265,6 +310,7 @@ describe('Edge Case Tests', () => {
 
     test('should handle connection drops during query', async () => {
       // Simulate connection drop mid-query
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       mockClient.query.mockImplementationOnce(() => {
         // Emit error event on client
         setTimeout(() => {
@@ -310,6 +356,7 @@ describe('Edge Case Tests', () => {
         ],
       };
 
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       mockQueryWithTransaction(nullResult);
 
       const result = await executor.executeQuery('SELECT * FROM test');
@@ -343,6 +390,7 @@ describe('Edge Case Tests', () => {
         ],
       };
 
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       mockQueryWithTransaction(unicodeResult);
 
       const result = await executor.executeQuery('SELECT * FROM unicode_test');
@@ -362,6 +410,7 @@ describe('Edge Case Tests', () => {
         fields: [{ name: 'data', dataTypeID: 25 }],
       };
 
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       mockQueryWithTransaction(longResult);
 
       const result = await executor.executeQuery('SELECT * FROM long_text');
@@ -373,19 +422,20 @@ describe('Edge Case Tests', () => {
   describe('Transaction Edge Cases', () => {
     test('should handle nested transaction attempts', async () => {
       // PostgreSQL doesn't support nested transactions, uses savepoints instead
-      mockClient.query
-        .mockResolvedValueOnce({ command: 'BEGIN' })
-        .mockRejectedValueOnce(new Error('current transaction is aborted'));
+      // The query 'BEGIN; BEGIN;' is detected as a transaction command, so no wrapper BEGIN is added
+      mockPool.connect.mockResolvedValueOnce(mockClient);
+      mockClient.query.mockRejectedValueOnce(new Error('current transaction is aborted'));
 
       await expect(
         executor.executeQuery('BEGIN; BEGIN;') // Invalid nested transaction
-      ).rejects.toThrow();
+      ).rejects.toThrow('current transaction is aborted');
     });
 
     test('should rollback on any error in transaction', async () => {
+      // This query will be wrapped in a transaction
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       mockClient.query
         .mockResolvedValueOnce({ command: 'BEGIN' })
-        .mockResolvedValueOnce({ command: 'INSERT', rowCount: 1 })
         .mockRejectedValueOnce(new Error('constraint violation'))
         .mockResolvedValueOnce({ command: 'ROLLBACK' });
 
