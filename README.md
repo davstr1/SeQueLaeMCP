@@ -1,5 +1,7 @@
 # sequelae-mcp
 
+[![Tests](https://github.com/davstr1/sql-agent-cli/actions/workflows/test.yml/badge.svg)](https://github.com/davstr1/sql-agent-cli/actions/workflows/test.yml)
+
 MCP-enabled PostgreSQL tool that lets AI assistants execute SQL directly. Also works as a CLI for humans.
 
 ## 🤖 For AI Assistants (Primary Use)
