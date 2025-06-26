@@ -84,7 +84,7 @@ describe('McpToolHandler', () => {
         arguments: { query: 'SELECT * FROM users' },
       });
 
-      expect(mockExecutor.executeQuery).toHaveBeenCalledWith('SELECT * FROM users');
+      expect(mockExecutor.executeQuery).toHaveBeenCalledWith('SELECT * FROM users', true);
       expect(response.content[0].type).toBe('text');
 
       const result = JSON.parse(response.content[0].text!);
@@ -166,7 +166,7 @@ describe('McpToolHandler', () => {
         arguments: { filepath: '/path/to/file.sql' },
       });
 
-      expect(mockExecutor.executeFile).toHaveBeenCalledWith('/path/to/file.sql');
+      expect(mockExecutor.executeFile).toHaveBeenCalledWith('/path/to/file.sql', true);
       expect(response.content[0].type).toBe('text');
 
       const result = JSON.parse(response.content[0].text!);

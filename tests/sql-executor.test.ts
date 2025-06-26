@@ -4,9 +4,14 @@ import * as fs from 'fs';
 
 // Mock pg module
 jest.mock('pg', () => {
+  const mockClient = {
+    query: jest.fn(),
+    release: jest.fn(),
+  };
   const mockPool = {
     query: jest.fn(),
     end: jest.fn(),
+    connect: jest.fn(() => Promise.resolve(mockClient)),
   };
   return {
     Pool: jest.fn(() => mockPool),
@@ -22,11 +27,17 @@ jest.mock('fs', () => ({
 describe('SqlExecutor', () => {
   let executor: SqlExecutor;
   let mockPool: any;
+  let mockClient: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
     executor = new SqlExecutor('postgresql://test:test@localhost:5432/test');
     mockPool = (Pool as jest.MockedClass<typeof Pool>).mock.results[0].value;
+    mockClient = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+    mockPool.connect.mockResolvedValue(mockClient);
   });
 
   describe('constructor', () => {
@@ -48,11 +59,15 @@ describe('SqlExecutor', () => {
           { id: 2, name: 'Test2' },
         ],
       };
-      mockPool.query.mockResolvedValue(mockResult);
+      mockClient.query.mockResolvedValue(mockResult);
 
       const result = await executor.executeQuery('SELECT * FROM users');
 
-      expect(mockPool.query).toHaveBeenCalledWith('SELECT * FROM users');
+      expect(mockPool.connect).toHaveBeenCalled();
+      expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
+      expect(mockClient.query).toHaveBeenCalledWith('SELECT * FROM users');
+      expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
+      expect(mockClient.release).toHaveBeenCalled();
       expect(result).toMatchObject({
         command: 'SELECT',
         rowCount: 2,
@@ -68,7 +83,7 @@ describe('SqlExecutor', () => {
         rowCount: 0,
         rows: [],
       };
-      mockPool.query.mockResolvedValue(mockResult);
+      mockClient.query.mockResolvedValue(mockResult);
 
       const result = await executor.executeQuery('SELECT * FROM users WHERE 1=0');
 
@@ -81,9 +96,43 @@ describe('SqlExecutor', () => {
 
     test('should handle query errors', async () => {
       const error = new Error('Syntax error');
-      mockPool.query.mockRejectedValue(error);
+      mockClient.query.mockRejectedValue(error);
 
       await expect(executor.executeQuery('INVALID SQL')).rejects.toThrow('Syntax error');
+      expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
+      expect(mockClient.release).toHaveBeenCalled();
+    });
+
+    test('should not wrap transaction commands in transactions', async () => {
+      const mockResult = {
+        command: 'BEGIN',
+        rowCount: 0,
+        rows: [],
+      };
+      mockClient.query.mockResolvedValue(mockResult);
+
+      await executor.executeQuery('BEGIN');
+
+      expect(mockClient.query).toHaveBeenCalledTimes(1);
+      expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
+      expect(mockClient.query).not.toHaveBeenCalledWith('COMMIT');
+      expect(mockClient.release).toHaveBeenCalled();
+    });
+
+    test('should handle queries with transaction disabled', async () => {
+      const mockResult = {
+        command: 'SELECT',
+        rowCount: 1,
+        rows: [{ id: 1 }],
+      };
+      mockClient.query.mockResolvedValue(mockResult);
+
+      await executor.executeQuery('SELECT * FROM users', false);
+
+      expect(mockClient.query).toHaveBeenCalledTimes(1);
+      expect(mockClient.query).toHaveBeenCalledWith('SELECT * FROM users');
+      expect(mockClient.query).not.toHaveBeenCalledWith('BEGIN');
+      expect(mockClient.query).not.toHaveBeenCalledWith('COMMIT');
     });
   });
 
@@ -98,13 +147,15 @@ describe('SqlExecutor', () => {
 
       (fs.existsSync as jest.Mock).mockReturnValue(true);
       (fs.readFileSync as jest.Mock).mockReturnValue(sqlContent);
-      mockPool.query.mockResolvedValue(mockResult);
+      mockClient.query.mockResolvedValue(mockResult);
 
       const result = await executor.executeFile('test.sql');
 
       expect(fs.existsSync).toHaveBeenCalled();
       expect(fs.readFileSync).toHaveBeenCalledWith(expect.stringContaining('test.sql'), 'utf8');
-      expect(mockPool.query).toHaveBeenCalledWith(sqlContent);
+      expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
+      expect(mockClient.query).toHaveBeenCalledWith(sqlContent);
+      expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
       expect(result).toMatchObject({
         command: 'SELECT',
         rowCount: 1,

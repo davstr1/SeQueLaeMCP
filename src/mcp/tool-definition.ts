@@ -38,6 +38,11 @@ export const SQL_AGENT_TOOLS: McpToolDefinition[] = [
           description: 'Return results in JSON format',
           default: true,
         },
+        transaction: {
+          type: 'boolean',
+          description: 'Wrap query in a transaction (auto-commit on success, rollback on error)',
+          default: true,
+        },
       },
       required: ['query'],
     },
@@ -55,6 +60,12 @@ export const SQL_AGENT_TOOLS: McpToolDefinition[] = [
         json: {
           type: 'boolean',
           description: 'Return results in JSON format',
+          default: true,
+        },
+        transaction: {
+          type: 'boolean',
+          description:
+            'Wrap file execution in a transaction (auto-commit on success, rollback on error)',
           default: true,
         },
       },

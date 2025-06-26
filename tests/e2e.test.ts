@@ -64,7 +64,10 @@ describe('Sequelae E2E Tests', () => {
       // Add --json flag to all test commands
       const proc = spawn('node', [binPath, '--json', ...args], {
         cwd: process.cwd(),
-        env: { ...process.env },
+        env: {
+          ...process.env,
+          POSTGRES_SSL_REJECT_UNAUTHORIZED: 'false', // Match test pool SSL settings
+        },
       });
 
       let stdout = '';

@@ -72,20 +72,54 @@ export class SqlExecutor {
     });
   }
 
-  async executeQuery(sql: string): Promise<QueryResult> {
+  async executeQuery(sql: string, useTransaction: boolean = true): Promise<QueryResult> {
     const start = Date.now();
-    const result = await this.pool.query(sql);
-    const duration = Date.now() - start;
+    const client = await this.pool.connect();
 
-    return {
-      command: result.command,
-      rowCount: result.rowCount || 0,
-      rows: result.rows || [],
-      duration,
-    };
+    try {
+      if (useTransaction && !this.isTransactionCommand(sql)) {
+        await client.query('BEGIN');
+      }
+
+      const result = await client.query(sql);
+
+      if (useTransaction && !this.isTransactionCommand(sql)) {
+        await client.query('COMMIT');
+      }
+
+      const duration = Date.now() - start;
+
+      return {
+        command: result.command,
+        rowCount: result.rowCount || 0,
+        rows: result.rows || [],
+        duration,
+      };
+    } catch (error) {
+      if (useTransaction && !this.isTransactionCommand(sql)) {
+        try {
+          await client.query('ROLLBACK');
+        } catch (rollbackError) {
+          console.error('Error during rollback:', rollbackError);
+        }
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
-  async executeFile(filepath: string): Promise<QueryResult> {
+  private isTransactionCommand(sql: string): boolean {
+    const trimmedSql = sql.trim().toUpperCase();
+    return (
+      trimmedSql.startsWith('BEGIN') ||
+      trimmedSql.startsWith('COMMIT') ||
+      trimmedSql.startsWith('ROLLBACK') ||
+      trimmedSql.startsWith('START TRANSACTION')
+    );
+  }
+
+  async executeFile(filepath: string, useTransaction: boolean = true): Promise<QueryResult> {
     const resolvedPath = resolve(process.cwd(), filepath);
 
     if (!existsSync(resolvedPath)) {
@@ -93,7 +127,7 @@ export class SqlExecutor {
     }
 
     const sql = readFileSync(resolvedPath, 'utf8');
-    return this.executeQuery(sql);
+    return this.executeQuery(sql, useTransaction);
   }
 
   async getSchema(tables?: string[], allSchemas = false): Promise<SchemaResult> {

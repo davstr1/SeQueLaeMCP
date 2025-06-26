@@ -61,12 +61,13 @@ export class McpToolHandler {
   private async handleSqlExec(args: Record<string, unknown>): Promise<McpToolResponse> {
     const query = args.query as string;
     const jsonMode = args.json !== false; // Default true
+    const useTransaction = args.transaction !== false; // Default true
 
     try {
       if (!this.executor) {
         throw new Error('SqlExecutor not initialized');
       }
-      const result = await this.executor.executeQuery(query);
+      const result = await this.executor.executeQuery(query, useTransaction);
 
       if (jsonMode) {
         return {
@@ -141,12 +142,13 @@ export class McpToolHandler {
   private async handleSqlFile(args: Record<string, unknown>): Promise<McpToolResponse> {
     const filepath = args.filepath as string;
     const jsonMode = args.json !== false; // Default true
+    const useTransaction = args.transaction !== false; // Default true
 
     try {
       if (!this.executor) {
         throw new Error('SqlExecutor not initialized');
       }
-      const result = await this.executor.executeFile(filepath);
+      const result = await this.executor.executeFile(filepath, useTransaction);
 
       if (jsonMode) {
         return {

@@ -68,6 +68,7 @@ Usage:
   sequelae backup                   Create a database backup
   sequelae exit                     Exit sequelae
   sequelae --json                   Output results in JSON format
+  sequelae --no-transaction         Disable automatic transactions
   
 Examples:
   sequelae exec "SELECT * FROM users"
@@ -105,17 +106,22 @@ export function handleExit(jsonMode: boolean): string {
 export interface ParsedArguments {
   jsonMode: boolean;
   allSchemas: boolean;
+  noTransaction: boolean;
   filteredArgs: string[];
 }
 
 export function parseArguments(args: string[]): ParsedArguments {
   const jsonMode = args.includes('--json');
   const allSchemas = args.includes('--all');
-  const filteredArgs = args.filter(arg => arg !== '--json' && arg !== '--all');
+  const noTransaction = args.includes('--no-transaction');
+  const filteredArgs = args.filter(
+    arg => arg !== '--json' && arg !== '--all' && arg !== '--no-transaction'
+  );
 
   return {
     jsonMode,
     allSchemas,
+    noTransaction,
     filteredArgs,
   };
 }
@@ -299,7 +305,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
   // Parse arguments
-  const { jsonMode, allSchemas, filteredArgs } = parseArguments(args);
+  const { jsonMode, allSchemas, noTransaction, filteredArgs } = parseArguments(args);
 
   // Skip header when running in Jest or JSON mode
   if (typeof jest === 'undefined' && !jsonMode) {
@@ -680,10 +686,19 @@ async function main(): Promise<void> {
       }
     }
 
-    // Execute the query
-    const start = Date.now();
-    const result = await pool.query(sql);
-    const duration = Date.now() - start;
+    // Execute the query using SqlExecutor
+    const executor = new SqlExecutor(databaseUrl as string);
+    let result: QueryResult;
+
+    try {
+      if (filteredArgs[0] === 'file') {
+        result = await executor.executeFile(filteredArgs[1], !noTransaction);
+      } else {
+        result = await executor.executeQuery(sql, !noTransaction);
+      }
+    } finally {
+      await executor.close();
+    }
 
     // Display results
     if (jsonMode) {
@@ -692,7 +707,7 @@ async function main(): Promise<void> {
         command: result.command || 'Query executed',
         rowCount: result.rowCount || 0,
         rows: result.rows || [],
-        duration: duration,
+        duration: result.duration || 0,
       };
       console.log(JSON.stringify(output));
     } else {
@@ -709,7 +724,7 @@ async function main(): Promise<void> {
           console.log(`📋 ${table.table_schema}.${table.table_name}`);
 
           // Display columns
-          const columns: Column[] = JSON.parse(table.columns);
+          const columns: Column[] = JSON.parse(table.columns as string);
           console.log('  Columns:');
           for (const col of columns) {
             const nullable = col.is_nullable === 'YES' ? ' (nullable)' : '';
@@ -721,7 +736,7 @@ async function main(): Promise<void> {
           }
 
           // Display constraints
-          const constraints: Constraint[] = JSON.parse(table.constraints);
+          const constraints: Constraint[] = JSON.parse(table.constraints as string);
           if (constraints.length > 0) {
             console.log('  Constraints:');
             const constraintsByType = constraints.reduce(
@@ -759,7 +774,7 @@ async function main(): Promise<void> {
       // Show execution info
       const command = result.command || 'Query executed';
       console.log(
-        `\n✓ ${command} ${result.rowCount ? `(${result.rowCount} rows)` : ''} - ${duration}ms`
+        `\n✓ ${command} ${result.rowCount ? `(${result.rowCount} rows)` : ''} - ${result.duration}ms`
       );
     }
   } catch (error) {

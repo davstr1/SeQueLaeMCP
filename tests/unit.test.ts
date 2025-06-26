@@ -35,7 +35,10 @@ describe('Sequelae Unit Tests', () => {
       const binPath = require.resolve('../bin/sequelae');
       const proc = spawn('node', [binPath, ...args], {
         cwd: process.cwd(),
-        env: process.env,
+        env: {
+          ...process.env,
+          POSTGRES_SSL_REJECT_UNAUTHORIZED: 'false', // Match test SSL settings
+        },
       });
 
       let stdout = '';
@@ -155,6 +158,7 @@ describe('Sequelae Unit Tests', () => {
         expect(result).toEqual({
           jsonMode: false,
           allSchemas: false,
+          noTransaction: false,
           filteredArgs: [],
         });
       });
@@ -164,6 +168,7 @@ describe('Sequelae Unit Tests', () => {
         expect(result).toEqual({
           jsonMode: true,
           allSchemas: false,
+          noTransaction: false,
           filteredArgs: ['exec', 'SELECT 1'],
         });
       });
@@ -173,6 +178,7 @@ describe('Sequelae Unit Tests', () => {
         expect(result).toEqual({
           jsonMode: false,
           allSchemas: true,
+          noTransaction: false,
           filteredArgs: ['schema'],
         });
       });
@@ -182,6 +188,7 @@ describe('Sequelae Unit Tests', () => {
         expect(result).toEqual({
           jsonMode: true,
           allSchemas: true,
+          noTransaction: false,
           filteredArgs: ['schema'],
         });
       });
@@ -191,7 +198,18 @@ describe('Sequelae Unit Tests', () => {
         expect(result).toEqual({
           jsonMode: true,
           allSchemas: true,
+          noTransaction: false,
           filteredArgs: ['--help'],
+        });
+      });
+
+      test('should parse --no-transaction flag', () => {
+        const result = parseArguments(['--no-transaction', 'exec', 'SELECT 1']);
+        expect(result).toEqual({
+          jsonMode: false,
+          allSchemas: false,
+          noTransaction: true,
+          filteredArgs: ['exec', 'SELECT 1'],
         });
       });
     });
