@@ -9,7 +9,7 @@ sql-agent-cli implements the Model Context Protocol (MCP), allowing AI assistant
 ### Quick Start
 ```bash
 # Install
-npm install -D sql-agent-cli
+npm install -D sequelae-mcp
 
 # Run as MCP server
 npx sql-agent --mcp
@@ -74,7 +74,7 @@ AI assistants like Claude are supposed to build entire apps, but they can't dire
 
 ### 1. Install
 ```bash
-npm install -D sql-agent-cli
+npm install -D sequelae-mcp
 ```
 
 ### 2. Configure Database
