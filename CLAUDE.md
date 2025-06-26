@@ -51,6 +51,8 @@ Don't stop until the process is totally finished.
 --X  
 Don't touch the codebase, except for the one file specified (if any).
 
+--READY? --MIND --X then --WD about is this codebase 100% production ready ?
+
 ---
 
 ### General Notes

@@ -11,14 +11,14 @@
 
 ### Phase 2: Core Backup Implementation
 
-- [ ] Add `backup(options: BackupOptions): Promise<BackupResult>` method to SqlExecutor class
-- [ ] Implement connection string parsing to extract host, port, database, user, password
-- [ ] Build pg_dump command arguments based on options
-- [ ] Implement pg_dump execution using child_process.spawn
-- [ ] Handle PGPASSWORD environment variable for authentication
-- [ ] Implement proper error handling with detailed messages
-- [ ] Add output file size calculation
-- [ ] Ensure proper cleanup on error
+- [x] Add `backup(options: BackupOptions): Promise<BackupResult>` method to SqlExecutor class
+- [x] Implement connection string parsing to extract host, port, database, user, password
+- [x] Build pg_dump command arguments based on options
+- [x] Implement pg_dump execution using child_process.spawn
+- [x] Handle PGPASSWORD environment variable for authentication
+- [x] Implement proper error handling with detailed messages
+- [x] Add output file size calculation
+- [x] Ensure proper cleanup on error
 
 ### Phase 3: MCP Tool Integration
 

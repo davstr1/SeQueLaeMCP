@@ -1,6 +1,8 @@
 import { Pool, QueryResult as PgQueryResult } from 'pg';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, statSync } from 'fs';
 import { resolve } from 'path';
+import { spawn } from 'child_process';
+import { BackupOptions, BackupResult } from '../types/backup';
 
 export interface QueryResult {
   command?: string;
@@ -42,8 +44,10 @@ export interface MissingTableInfo {
 
 export class SqlExecutor {
   private pool: Pool;
+  private connectionString: string;
 
   constructor(connectionString: string) {
+    this.connectionString = connectionString;
     this.pool = new Pool({
       connectionString,
       ssl: { rejectUnauthorized: false },
@@ -272,5 +276,126 @@ export class SqlExecutor {
       tables,
       ...(missingTables.length > 0 && { missingTables }),
     };
+  }
+
+  async backup(options: BackupOptions = {}): Promise<BackupResult> {
+    const start = Date.now();
+
+    try {
+      // Parse connection string
+      const url = new URL(this.connectionString);
+
+      // Build pg_dump arguments
+      const args: string[] = [
+        '-h',
+        url.hostname,
+        '-p',
+        url.port || '5432',
+        '-U',
+        url.username,
+        '-d',
+        url.pathname.slice(1),
+        '--no-password',
+      ];
+
+      // Add format option
+      if (options.format && options.format !== 'plain') {
+        args.push('-F', options.format.charAt(0));
+      }
+
+      // Add table selections
+      if (options.tables?.length) {
+        options.tables.forEach(table => {
+          args.push('-t', table);
+        });
+      }
+
+      // Add schema selections
+      if (options.schemas?.length) {
+        options.schemas.forEach(schema => {
+          args.push('-n', schema);
+        });
+      }
+
+      // Data/schema only options
+      if (options.dataOnly) args.push('-a');
+      if (options.schemaOnly) args.push('-s');
+
+      // Compression for custom format
+      if (options.compress && (!options.format || options.format === 'custom')) {
+        args.push('-Z', '6');
+      }
+
+      // Output file
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const defaultExt =
+        options.format === 'custom'
+          ? 'dump'
+          : options.format === 'tar'
+            ? 'tar'
+            : options.format === 'directory'
+              ? ''
+              : 'sql';
+      const outputPath = options.outputPath || `backup_${timestamp}.${defaultExt}`;
+
+      if (options.format !== 'directory') {
+        args.push('-f', outputPath);
+      } else {
+        args.push('-f', outputPath);
+        args.push('-j', '4'); // Use 4 parallel jobs for directory format
+      }
+
+      // Execute pg_dump
+      const env = { ...process.env, PGPASSWORD: url.password };
+
+      return new Promise((resolve, reject) => {
+        const proc = spawn('pg_dump', args, { env });
+        let stderr = '';
+
+        proc.stderr.on('data', data => {
+          stderr += data.toString();
+        });
+
+        proc.on('close', code => {
+          if (code === 0) {
+            // Calculate file size
+            let size: number | undefined;
+            try {
+              const stats = statSync(outputPath);
+              size = stats.size;
+            } catch (_e) {
+              // Size calculation is optional
+            }
+
+            resolve({
+              success: true,
+              outputPath,
+              size,
+              duration: Date.now() - start,
+            });
+          } else {
+            reject(new Error(`pg_dump failed with exit code ${code}: ${stderr}`));
+          }
+        });
+
+        proc.on('error', error => {
+          if (error.message.includes('ENOENT')) {
+            reject(
+              new Error('pg_dump not found. Please ensure PostgreSQL client tools are installed.')
+            );
+          } else {
+            reject(new Error(`Failed to execute pg_dump: ${error.message}`));
+          }
+        });
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        success: false,
+        outputPath: '',
+        duration: Date.now() - start,
+        error: errorMessage,
+      };
+    }
   }
 }
