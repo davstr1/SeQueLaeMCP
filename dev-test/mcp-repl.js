@@ -17,7 +17,7 @@ const colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   cyan: '\x1b[36m',
-  magenta: '\x1b[35m'
+  magenta: '\x1b[35m',
 };
 
 function log(message, color = 'reset') {
@@ -30,18 +30,21 @@ log('Type "help" for commands or JSON-RPC requests directly\n', 'dim');
 
 const mcpServer = spawn('npx', ['sequelae', '--mcp'], {
   cwd: process.cwd(),
-  env: process.env
+  env: process.env,
 });
 
 let requestId = 1;
 
 // Handle server output
-mcpServer.stdout.on('data', (data) => {
-  const lines = data.toString().split('\n').filter(line => line.trim());
+mcpServer.stdout.on('data', data => {
+  const lines = data
+    .toString()
+    .split('\n')
+    .filter(line => line.trim());
   lines.forEach(line => {
     try {
       const response = JSON.parse(line);
-      
+
       // Pretty print response
       if (response.error) {
         log('\n❌ Error Response:', 'red');
@@ -69,12 +72,12 @@ mcpServer.stdout.on('data', (data) => {
       console.log('Raw:', line);
     }
   });
-  
+
   // Show prompt again
   process.stdout.write('\n> ');
 });
 
-mcpServer.stderr.on('data', (data) => {
+mcpServer.stderr.on('data', data => {
   log(`\nServer Error: ${data}`, 'red');
   process.stdout.write('> ');
 });
@@ -83,7 +86,7 @@ mcpServer.stderr.on('data', (data) => {
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
-  prompt: '> '
+  prompt: '> ',
 });
 
 // Helper commands
@@ -101,49 +104,49 @@ const commands = {
     console.log('\nOr send raw JSON-RPC:');
     console.log('  {"method":"tools/list","params":{}}');
   },
-  
+
   init: () => {
     sendRequest('initialize');
   },
-  
+
   tools: () => {
     sendRequest('tools/list');
   },
-  
-  exec: (query) => {
+
+  exec: query => {
     if (!query) {
       log('Usage: exec <SQL query>', 'red');
       return;
     }
     sendRequest('tools/call', {
       name: 'sql_exec',
-      arguments: { query }
+      arguments: { query },
     });
   },
-  
-  schema: (tables) => {
+
+  schema: tables => {
     const args = tables ? { tables: tables.split(' ') } : {};
     sendRequest('tools/call', {
       name: 'sql_schema',
-      arguments: args
+      arguments: args,
     });
   },
-  
-  file: (filepath) => {
+
+  file: filepath => {
     if (!filepath) {
       log('Usage: file <path>', 'red');
       return;
     }
     sendRequest('tools/call', {
       name: 'sql_file',
-      arguments: { filepath }
+      arguments: { filepath },
     });
   },
-  
+
   clear: () => {
     console.clear();
     log('SQL Agent MCP REPL', 'bright');
-  }
+  },
 };
 
 // Send request to server
@@ -152,28 +155,28 @@ function sendRequest(method, params = {}) {
     jsonrpc: '2.0',
     id: requestId++,
     method,
-    params
+    params,
   };
-  
+
   log(`\n📤 Sending: ${method}`, 'blue');
   mcpServer.stdin.write(JSON.stringify(request) + '\n');
 }
 
 // Handle input
-rl.on('line', (line) => {
+rl.on('line', line => {
   const input = line.trim();
-  
+
   if (!input) {
     rl.prompt();
     return;
   }
-  
+
   // Check for exit
   if (input === 'exit' || input === 'quit') {
     rl.close();
     return;
   }
-  
+
   // Try to parse as JSON first
   if (input.startsWith('{')) {
     try {
@@ -186,14 +189,14 @@ rl.on('line', (line) => {
     // Parse as command
     const [cmd, ...args] = input.split(' ');
     const handler = commands[cmd];
-    
+
     if (handler) {
       handler(args.join(' '));
     } else {
       log(`Unknown command: ${cmd}. Type "help" for commands.`, 'red');
     }
   }
-  
+
   rl.prompt();
 });
 
