@@ -24,13 +24,13 @@ import {
   createFileNotFoundError,
 } from '../src/cli';
 
-describe('SQL Agent Unit Tests', () => {
-  // Helper function to execute sql-agent CLI
-  async function execSqlAgent(
+describe('Sequelae Unit Tests', () => {
+  // Helper function to execute sequelae CLI
+  async function execSequelae(
     args: string[]
   ): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
     return new Promise((resolve, reject) => {
-      const binPath = require.resolve('../bin/sql-agent');
+      const binPath = require.resolve('../bin/sequelae');
       const proc = spawn('node', [binPath, ...args], {
         cwd: process.cwd(),
         env: process.env,
@@ -65,7 +65,7 @@ describe('SQL Agent Unit Tests', () => {
     describe('handleVersion', () => {
       test('should return version string in text mode', () => {
         const result = handleVersion(false);
-        expect(result).toMatch(/^sql-agent-cli v\d+\.\d+\.\d+$/);
+        expect(result).toMatch(/^sequelae-mcp v\d+\.\d+\.\d+$/);
       });
 
       test('should return version object in JSON mode', () => {
@@ -80,8 +80,8 @@ describe('SQL Agent Unit Tests', () => {
       test('should return help text in text mode', () => {
         const result = handleHelp(false);
         expect(result).toContain('Usage:');
-        expect(result).toContain('sql-agent exec "SQL query"');
-        expect(result).toContain('sql-agent file path/to/query.sql');
+        expect(result).toContain('sequelae exec "SQL query"');
+        expect(result).toContain('sequelae file path/to/query.sql');
         expect(result).toContain('Examples:');
       });
 
@@ -107,10 +107,10 @@ describe('SQL Agent Unit Tests', () => {
         const result = formatError(
           'No command provided',
           false,
-          'Run sql-agent --help for usage information'
+          'Run sequelae --help for usage information'
         );
         expect(result).toBe(
-          'Error: No command provided\nRun sql-agent --help for usage information'
+          'Error: No command provided\nRun sequelae --help for usage information'
         );
       });
 
@@ -124,12 +124,12 @@ describe('SQL Agent Unit Tests', () => {
         const result = formatError(
           'No command provided',
           true,
-          'Run sql-agent --help for usage information'
+          'Run sequelae --help for usage information'
         );
         const parsed = JSON.parse(result);
         expect(parsed).toEqual({
           error: 'No command provided',
-          hint: 'Run sql-agent --help for usage information',
+          hint: 'Run sequelae --help for usage information',
         });
       });
     });
@@ -610,7 +610,7 @@ SELECT * FROM users;`;
         const error = createNoCommandError();
         expect(error.message).toBe('No command provided');
         expect(error.code).toBe('NO_COMMAND');
-        expect(error.hint).toBe('Run sql-agent --help for usage information');
+        expect(error.hint).toBe('Run sequelae --help for usage information');
         expect(error).toBeInstanceOf(SqlAgentError);
       });
     });
@@ -653,21 +653,21 @@ SELECT * FROM users;`;
 
   describe('CLI Argument Parsing', () => {
     test('should show help with --help flag', async () => {
-      const result = await execSqlAgent(['--help']);
+      const result = await execSequelae(['--help']);
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('Usage:');
-      expect(result.stdout).toContain('sql-agent exec "SQL query"');
-      expect(result.stdout).toContain('sql-agent file path/to/query.sql');
+      expect(result.stdout).toContain('sequelae exec "SQL query"');
+      expect(result.stdout).toContain('sequelae file path/to/query.sql');
     });
 
     test('should show help with -h flag', async () => {
-      const result = await execSqlAgent(['-h']);
+      const result = await execSequelae(['-h']);
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('Usage:');
     });
 
     test('should handle --json flag with help', async () => {
-      const result = await execSqlAgent(['--json', '--help']);
+      const result = await execSequelae(['--json', '--help']);
       expect(result.code).toBe(0);
       expect(result.json).toBeDefined();
       expect((result.json as any).usage).toBeDefined();
@@ -675,57 +675,57 @@ SELECT * FROM users;`;
     });
 
     test('should error when no command provided', async () => {
-      const result = await execSqlAgent([]);
+      const result = await execSequelae([]);
       expect(result.code).toBe(1);
       expect(result.stderr).toContain('No command provided');
     });
 
     test('should error when unknown command provided', async () => {
-      const result = await execSqlAgent(['unknown']);
+      const result = await execSequelae(['unknown']);
       expect(result.code).toBe(1);
       expect(result.stderr).toContain('Unknown command');
     });
 
     test('should handle missing SQL query for exec command', async () => {
-      const result = await execSqlAgent(['exec']);
+      const result = await execSequelae(['exec']);
       expect(result.code).toBe(1);
       expect(result.stderr).toContain('No SQL query provided');
     });
 
     test('should handle missing file path for file command', async () => {
-      const result = await execSqlAgent(['file']);
+      const result = await execSequelae(['file']);
       expect(result.code).toBe(1);
       expect(result.stderr).toContain('No file path provided');
     });
 
     test('should handle exit command', async () => {
-      const result = await execSqlAgent(['exit']);
+      const result = await execSequelae(['exit']);
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('Goodbye!');
     });
 
     test('should handle quit command', async () => {
-      const result = await execSqlAgent(['quit']);
+      const result = await execSequelae(['quit']);
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('Goodbye!');
     });
 
     test('should show version with --version flag', async () => {
-      const result = await execSqlAgent(['--version']);
+      const result = await execSequelae(['--version']);
       expect(result.code).toBe(0);
-      expect(result.stdout).toContain('sql-agent-cli v');
+      expect(result.stdout).toContain('sequelae-mcp v');
     });
 
     test('should show version with -v flag', async () => {
-      const result = await execSqlAgent(['-v']);
+      const result = await execSequelae(['-v']);
       expect(result.code).toBe(0);
-      expect(result.stdout).toContain('sql-agent-cli v');
+      expect(result.stdout).toContain('sequelae-mcp v');
     });
   });
 
   describe('Error Output Formatting', () => {
     test('should format errors as JSON when --json flag is used', async () => {
-      const result = await execSqlAgent(['--json', 'exec']);
+      const result = await execSequelae(['--json', 'exec']);
       expect(result.code).toBe(1);
       expect(result.json).toBeDefined();
       expect((result.json as any).error).toBeDefined();
@@ -733,20 +733,20 @@ SELECT * FROM users;`;
     });
 
     test('should output plain text errors without --json flag', async () => {
-      const result = await execSqlAgent(['exec']);
+      const result = await execSequelae(['exec']);
       expect(result.code).toBe(1);
       expect(result.stderr).toBeTruthy();
       expect(result.json).toBeUndefined();
     });
 
     test('should handle file not found error', async () => {
-      const result = await execSqlAgent(['file', '/tmp/non-existent-file.sql']);
+      const result = await execSequelae(['file', '/tmp/non-existent-file.sql']);
       expect(result.code).toBe(1);
       expect(result.stderr).toContain('File not found');
     });
 
     test('should handle file not found error in JSON mode', async () => {
-      const result = await execSqlAgent(['--json', 'file', '/tmp/non-existent-file.sql']);
+      const result = await execSequelae(['--json', 'file', '/tmp/non-existent-file.sql']);
       expect(result.code).toBe(1);
       expect(result.json).toBeDefined();
       expect((result.json as any).error).toContain('File not found');
@@ -758,13 +758,13 @@ SELECT * FROM users;`;
     // They will be skipped if no database is configured
 
     test('should execute simple SELECT', async () => {
-      const result = await execSqlAgent(['exec', 'SELECT 1 as num']);
+      const result = await execSequelae(['exec', 'SELECT 1 as num']);
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('num');
     });
 
     test('should execute SQL with --json flag', async () => {
-      const result = await execSqlAgent(['--json', 'exec', 'SELECT 1 as num']);
+      const result = await execSequelae(['--json', 'exec', 'SELECT 1 as num']);
       expect(result.code).toBe(0);
       expect(result.json).toBeDefined();
       expect((result.json as any).success).toBe(true);
@@ -773,13 +773,13 @@ SELECT * FROM users;`;
     });
 
     test('should handle SQL syntax errors', async () => {
-      const result = await execSqlAgent(['exec', 'SELECT * FORM users']);
+      const result = await execSequelae(['exec', 'SELECT * FORM users']);
       expect(result.code).toBe(1);
       expect(result.stderr).toContain('syntax error');
     });
 
     test('should handle SQL syntax errors in JSON mode', async () => {
-      const result = await execSqlAgent(['--json', 'exec', 'SELECT * FORM users']);
+      const result = await execSequelae(['--json', 'exec', 'SELECT * FORM users']);
       expect(result.code).toBe(1);
       expect(result.json).toBeDefined();
       expect((result.json as any).success).toBe(false);
@@ -787,7 +787,7 @@ SELECT * FROM users;`;
     });
 
     test('should execute direct SQL without exec command', async () => {
-      const result = await execSqlAgent(['SELECT', '1', 'as', 'num']);
+      const result = await execSequelae(['SELECT', '1', 'as', 'num']);
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('num');
     });

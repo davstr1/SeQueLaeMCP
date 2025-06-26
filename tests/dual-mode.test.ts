@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import { resolve } from 'path';
 
 describe('Dual Mode Entry Point', () => {
-  const binPath = resolve(__dirname, '../bin/sql-agent');
+  const binPath = resolve(__dirname, '../bin/sequelae');
 
   // Helper to run the CLI
   async function runCli(
@@ -45,7 +45,7 @@ describe('Dual Mode Entry Point', () => {
       // Help might be in stdout or stderr depending on how it's output
       const output = result.stdout + result.stderr;
       expect(output).toContain('Usage:');
-      expect(output).toContain('sql-agent exec');
+      expect(output).toContain('sequelae exec');
     });
 
     test('should handle version in CLI mode', async () => {
@@ -53,7 +53,7 @@ describe('Dual Mode Entry Point', () => {
 
       expect(result.code).toBe(0);
       const output = result.stdout + result.stderr;
-      expect(output).toContain('sql-agent-cli v');
+      expect(output).toContain('sequelae-mcp v');
     });
   });
 

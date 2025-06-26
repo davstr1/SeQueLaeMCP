@@ -29,7 +29,7 @@ describe('SqlAgentMcpServer', () => {
       const info = server.getServerInfo();
 
       expect(info).toEqual({
-        name: 'sql-agent-mcp',
+        name: 'sequelae-mcp',
         version: '1.0.0',
         description: 'PostgreSQL query executor for AI assistants',
       });
@@ -66,7 +66,7 @@ describe('SqlAgentMcpServer', () => {
 
       expect(response).toMatchObject({
         serverInfo: {
-          name: 'sql-agent-mcp',
+          name: 'sequelae-mcp',
           version: '1.0.0',
           description: 'PostgreSQL query executor for AI assistants',
         },

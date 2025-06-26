@@ -12,10 +12,10 @@ if (!DATABASE_URL) {
 }
 
 // Test table names
-const USERS_TABLE = 'users_e2e_test_sql_agent';
-const POSTS_TABLE = 'posts_e2e_test_sql_agent';
+const USERS_TABLE = 'users_e2e_test_sequelae';
+const POSTS_TABLE = 'posts_e2e_test_sequelae';
 
-describe('SQL Agent E2E Tests', () => {
+describe('Sequelae E2E Tests', () => {
   let pool: Pool;
 
   beforeAll(async () => {
@@ -55,13 +55,12 @@ describe('SQL Agent E2E Tests', () => {
     }
   });
 
-  // Helper function to execute sql-agent CLI
-  async function execSqlAgent(
+  // Helper function to execute sequelae CLI
+  async function execSequelae(
     args: string[]
   ): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
     return new Promise((resolve, reject) => {
-      const binPath = require.resolve('../bin/sql-agent');
+      const binPath = require.resolve('../bin/sequelae');
       // Add --json flag to all test commands
       const proc = spawn('node', [binPath, '--json', ...args], {
         cwd: process.cwd(),
@@ -104,7 +103,7 @@ describe('SQL Agent E2E Tests', () => {
         )
       `;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(0);
       expect(result.json).toBeDefined();
       expect((result.json as any).success).toBe(true);
@@ -145,7 +144,7 @@ describe('SQL Agent E2E Tests', () => {
         )
       `;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(0);
       expect(result.json).toBeDefined();
       expect((result.json as any).success).toBe(true);
@@ -195,7 +194,7 @@ describe('SQL Agent E2E Tests', () => {
         RETURNING *
       `;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(0);
       expect(JSON.stringify((result.json as any).rows)).toContain('alice@test.com');
       expect(JSON.stringify((result.json as any).rows)).toContain('Bob Test');
@@ -205,7 +204,7 @@ describe('SQL Agent E2E Tests', () => {
     test('should handle duplicate email constraint', async () => {
       const sql = `INSERT INTO ${USERS_TABLE} (email, name) VALUES ('alice@test.com', 'Another Alice')`;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(1);
       expect((result.json as any).error).toContain('duplicate key value');
     });
@@ -221,7 +220,7 @@ describe('SQL Agent E2E Tests', () => {
         RETURNING *
       `;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(0);
       expect(JSON.stringify((result.json as any).rows)).toContain('Test Post');
       expect((result.json as any).rowCount).toBe(1);
@@ -269,7 +268,7 @@ describe('SQL Agent E2E Tests', () => {
       }
     });
     test('should query users', async () => {
-      const result = await execSqlAgent(['exec', `SELECT * FROM ${USERS_TABLE} ORDER BY email`]);
+      const result = await execSequelae(['exec', `SELECT * FROM ${USERS_TABLE} ORDER BY email`]);
       expect(result.code).toBe(0);
       expect(JSON.stringify((result.json as any).rows)).toContain('alice@test.com');
       expect(JSON.stringify((result.json as any).rows)).toContain('bob@test.com');
@@ -283,7 +282,7 @@ describe('SQL Agent E2E Tests', () => {
         JOIN ${USERS_TABLE} u ON p.user_id = u.id
       `;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(0);
       expect(JSON.stringify((result.json as any).rows)).toContain('Test Post');
       expect(JSON.stringify((result.json as any).rows)).toContain('Alice Test');
@@ -292,7 +291,7 @@ describe('SQL Agent E2E Tests', () => {
     test('should handle empty results', async () => {
       const sql = `SELECT * FROM ${POSTS_TABLE} WHERE title = 'Non-existent'`;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(0);
       expect((result.json as any).command).toContain('SELECT');
       expect((result.json as any).rowCount).toBe(0);
@@ -345,7 +344,7 @@ describe('SQL Agent E2E Tests', () => {
         RETURNING *
       `;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(0);
       expect(JSON.stringify((result.json as any).rows)).toContain('Updated Post');
       expect((result.json as any).rowCount).toBe(1);
@@ -359,7 +358,7 @@ describe('SQL Agent E2E Tests', () => {
         RETURNING *
       `;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(0);
       expect((result.json as any).command).toContain('UPDATE');
       expect((result.json as any).rowCount).toBe(0);
@@ -408,7 +407,7 @@ describe('SQL Agent E2E Tests', () => {
     test('should delete posts', async () => {
       const sql = `DELETE FROM ${POSTS_TABLE} WHERE title = 'Updated Post' RETURNING id`;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(0);
       expect((result.json as any).command).toContain('DELETE');
       expect((result.json as any).rowCount).toBe(1);
@@ -428,7 +427,7 @@ describe('SQL Agent E2E Tests', () => {
       // Delete the user
       const sql = `DELETE FROM ${USERS_TABLE} WHERE email = 'bob@test.com' RETURNING email`;
 
-      const result = await execSqlAgent(['exec', sql]);
+      const result = await execSequelae(['exec', sql]);
       expect(result.code).toBe(0);
       expect(JSON.stringify((result.json as any).rows)).toContain('bob@test.com');
 
@@ -447,7 +446,7 @@ describe('SQL Agent E2E Tests', () => {
       const tmpFile = '/tmp/test-query.sql';
       fs.writeFileSync(tmpFile, `SELECT COUNT(*) as user_count FROM ${USERS_TABLE}`);
 
-      const result = await execSqlAgent(['file', tmpFile]);
+      const result = await execSequelae(['file', tmpFile]);
       expect(result.code).toBe(0);
       expect(JSON.stringify((result.json as any).rows)).toContain('user_count');
 
@@ -456,7 +455,7 @@ describe('SQL Agent E2E Tests', () => {
     });
 
     test('should handle non-existent file', async () => {
-      const result = await execSqlAgent(['file', '/tmp/non-existent-file.sql']);
+      const result = await execSequelae(['file', '/tmp/non-existent-file.sql']);
       expect(result.code).toBe(1);
       expect((result.json as any).error).toContain('File not found');
     });
@@ -464,28 +463,28 @@ describe('SQL Agent E2E Tests', () => {
 
   describe('Error Handling', () => {
     test('should handle SQL syntax errors', async () => {
-      const result = await execSqlAgent(['exec', 'SELECT * FORM users']);
+      const result = await execSequelae(['exec', 'SELECT * FORM users']);
       expect(result.code).toBe(1);
       expect((result.json as any).error).toBeDefined();
       expect((result.json as any).error).toContain('syntax error');
     });
 
     test('should handle invalid table references', async () => {
-      const result = await execSqlAgent(['exec', 'SELECT * FROM non_existent_table_xyz']);
+      const result = await execSequelae(['exec', 'SELECT * FROM non_existent_table_xyz']);
       expect(result.code).toBe(1);
       expect((result.json as any).error).toContain('does not exist');
     });
 
     test('should show help', async () => {
-      const result = await execSqlAgent(['--help']);
+      const result = await execSequelae(['--help']);
       expect(result.code).toBe(0);
       expect((result.json as any).usage).toBeDefined();
-      expect((result.json as any).usage[0]).toContain('sql-agent exec');
-      expect((result.json as any).usage[1]).toContain('sql-agent file');
+      expect((result.json as any).usage[0]).toContain('sequelae exec');
+      expect((result.json as any).usage[1]).toContain('sequelae file');
     });
 
     test('should handle no command', async () => {
-      const result = await execSqlAgent([]);
+      const result = await execSequelae([]);
       expect(result.code).toBe(1);
       expect((result.json as any).error).toContain('No command provided');
     });
@@ -504,13 +503,13 @@ describe('SQL Agent E2E Tests', () => {
       `);
     });
     test('should execute direct SQL commands', async () => {
-      const result = await execSqlAgent(['SELECT', 'version()']);
+      const result = await execSequelae(['SELECT', 'version()']);
       expect(result.code).toBe(0);
       expect(JSON.stringify((result.json as any).rows)).toContain('PostgreSQL');
     });
 
     test('should handle multi-word SQL commands', async () => {
-      const result = await execSqlAgent(['SELECT', 'COUNT(*)', 'FROM', USERS_TABLE]);
+      const result = await execSequelae(['SELECT', 'COUNT(*)', 'FROM', USERS_TABLE]);
       expect(result.code).toBe(0);
       expect(JSON.stringify((result.json as any).rows)).toContain('count');
     });
