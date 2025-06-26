@@ -1,5 +1,5 @@
 {
-  "name": "sql-agent-cli",
+  "name": "sequelae-mcp",
   "version": "1.0.0",
   "description": "Let Claude, Cursor, and other AI agents run real SQL queries on live Postgres databases. No more copy-pasting SQL, stale schema docs, or hallucinated DB adapters — just raw, real-time access. Now with MCP support!",
   "keywords": [
