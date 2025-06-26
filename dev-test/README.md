@@ -80,6 +80,35 @@ npx sql-agent --help     # Show help
 npx sql-agent --version  # Show version
 ```
 
+## Testing MCP Mode
+
+### Automated Test
+```bash
+node test-mcp.js
+```
+
+This runs a series of MCP protocol tests automatically.
+
+### Interactive REPL
+```bash
+node mcp-repl.js
+```
+
+Commands:
+- `help` - Show available commands
+- `init` - Initialize MCP connection
+- `tools` - List available tools
+- `exec SELECT * FROM users_test_sql_agent` - Execute SQL
+- `schema` - Get all tables schema
+- `schema users_test_sql_agent` - Get specific table schema
+- `clear` - Clear screen
+- `exit` - Quit
+
+You can also send raw JSON-RPC:
+```
+> {"method":"tools/list","params":{}}
+```
+
 ## Cleanup
 
 Drop test tables when done:
