@@ -9,11 +9,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/sequelae-mcp.git"
+    "url": "https://github.com/davstr1/SeQueLaeMCP.git"
   },
-  "homepage": "https://github.com/yourusername/sequelae-mcp#readme",
+  "homepage": "https://github.com/davstr1/SeQueLaeMCP#readme",
   "bugs": {
-    "url": "https://github.com/yourusername/sequelae-mcp/issues"
+    "url": "https://github.com/davstr1/SeQueLaeMCP/issues"
   },
   "author": "",
   "license": "MIT",
