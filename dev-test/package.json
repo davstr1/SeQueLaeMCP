@@ -1,11 +1,11 @@
 {
-  "name": "sql-agent-cli-playground",
+  "name": "sequelae-mcp-playground",
   "version": "1.0.0",
-  "description": "Testing playground for sql-agent-cli",
+  "description": "Testing playground for sequelae-mcp",
   "scripts": {
-    "test": "echo 'Run: npx sql-agent --help'"
+    "test": "echo 'Run: npx sequelae --help'"
   },
   "devDependencies": {
-    "sql-agent-cli": "file:.."
+    "sequelae-mcp": "file:.."
   }
 }

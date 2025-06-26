@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require('../dist/bin/sql-agent.js');
+require('../dist/bin/sequelae.js');

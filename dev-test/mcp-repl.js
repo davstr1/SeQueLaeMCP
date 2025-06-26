@@ -28,7 +28,7 @@ function log(message, color = 'reset') {
 log('\n🚀 Starting SQL Agent MCP REPL...', 'bright');
 log('Type "help" for commands or JSON-RPC requests directly\n', 'dim');
 
-const mcpServer = spawn('npx', ['sql-agent', '--mcp'], {
+const mcpServer = spawn('npx', ['sequelae', '--mcp'], {
   cwd: process.cwd(),
   env: process.env
 });

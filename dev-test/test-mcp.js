@@ -23,7 +23,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env'
 
 // Start MCP server
 log('\n🚀 Starting SQL Agent in MCP mode...', 'bright');
-const mcpServer = spawn('npx', ['sql-agent', '--mcp'], {
+const mcpServer = spawn('npx', ['sequelae', '--mcp'], {
   cwd: process.cwd(),
   env: process.env  // Pass environment variables including DATABASE_URL
 });

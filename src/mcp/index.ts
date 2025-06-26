@@ -32,7 +32,7 @@ export class SqlAgentMcpServer {
    */
   getServerInfo(): McpServerInfo {
     return {
-      name: 'sql-agent-mcp',
+      name: 'sequelae-mcp',
       version: '1.0.0',
       description: 'PostgreSQL query executor for AI assistants',
     };

@@ -27,7 +27,7 @@ export function handleVersion(jsonMode: boolean): string {
   if (jsonMode) {
     return JSON.stringify({ version: packageJson.version });
   } else {
-    return `sql-agent-cli v${packageJson.version}`;
+    return `sequelae-mcp v${packageJson.version}`;
   }
 }
 
@@ -35,41 +35,41 @@ export function handleHelp(jsonMode: boolean): string {
   if (jsonMode) {
     return JSON.stringify({
       usage: [
-        'sql-agent exec "SQL query"         Execute a SQL query',
-        'sql-agent file path/to/query.sql   Execute SQL from file',
-        'sql-agent schema                   Show all tables in public schema',
-        'sql-agent schema [tables]          Show specific table(s) - comma separated',
-        'sql-agent schema --all             Show all schemas including system tables',
-        'sql-agent exit                     Exit sql-agent',
-        'sql-agent --json                   Output results in JSON format',
+        'sequelae exec "SQL query"         Execute a SQL query',
+        'sequelae file path/to/query.sql   Execute SQL from file',
+        'sequelae schema                   Show all tables in public schema',
+        'sequelae schema [tables]          Show specific table(s) - comma separated',
+        'sequelae schema --all             Show all schemas including system tables',
+        'sequelae exit                     Exit sequelae',
+        'sequelae --json                   Output results in JSON format',
       ],
       examples: [
-        'sql-agent exec "SELECT * FROM users"',
-        'sql-agent exec "CREATE TABLE posts (id serial primary key, title text)"',
-        'sql-agent file migrations/001_init.sql',
-        'sql-agent schema',
-        'sql-agent schema users,posts',
-        'sql-agent --json exec "SELECT * FROM users"',
+        'sequelae exec "SELECT * FROM users"',
+        'sequelae exec "CREATE TABLE posts (id serial primary key, title text)"',
+        'sequelae file migrations/001_init.sql',
+        'sequelae schema',
+        'sequelae schema users,posts',
+        'sequelae --json exec "SELECT * FROM users"',
       ],
     });
   } else {
     return `
 Usage:
-  sql-agent exec "SQL query"         Execute a SQL query
-  sql-agent file path/to/query.sql   Execute SQL from file
-  sql-agent schema                   Show all tables in public schema
-  sql-agent schema [tables]          Show specific table(s) - comma separated
-  sql-agent schema --all             Show all schemas including system tables
-  sql-agent exit                     Exit sql-agent
-  sql-agent --json                   Output results in JSON format
+  sequelae exec "SQL query"         Execute a SQL query
+  sequelae file path/to/query.sql   Execute SQL from file
+  sequelae schema                   Show all tables in public schema
+  sequelae schema [tables]          Show specific table(s) - comma separated
+  sequelae schema --all             Show all schemas including system tables
+  sequelae exit                     Exit sequelae
+  sequelae --json                   Output results in JSON format
   
 Examples:
-  sql-agent exec "SELECT * FROM users"
-  sql-agent exec "CREATE TABLE posts (id serial primary key, title text)"
-  sql-agent file migrations/001_init.sql
-  sql-agent schema
-  sql-agent schema users,posts
-  sql-agent --json exec "SELECT * FROM users"
+  sequelae exec "SELECT * FROM users"
+  sequelae exec "CREATE TABLE posts (id serial primary key, title text)"
+  sequelae file migrations/001_init.sql
+  sequelae schema
+  sequelae schema users,posts
+  sequelae --json exec "SELECT * FROM users"
     `;
   }
 }
@@ -208,7 +208,7 @@ export function createNoCommandError(): SqlAgentError {
   return new SqlAgentError(
     'No command provided',
     'NO_COMMAND',
-    'Run sql-agent --help for usage information'
+    'Run sequelae --help for usage information'
   );
 }
 
@@ -287,7 +287,7 @@ async function main(): Promise<void> {
 
   // Skip header when running in Jest or JSON mode
   if (typeof jest === 'undefined' && !jsonMode) {
-    console.log('🔗 sql-agent-cli - PostgreSQL SQL executor\n');
+    console.log('🔗 sequelae-mcp - PostgreSQL SQL executor\n');
   }
 
   // Handle no arguments
@@ -573,7 +573,7 @@ async function main(): Promise<void> {
           console.log(JSON.stringify({ error: `Unknown command: ${filteredArgs[0]}` }));
         } else {
           console.error(`Error: Unknown command: ${filteredArgs[0]}`);
-          console.error('Run sql-agent --help for usage information');
+          console.error('Run sequelae --help for usage information');
         }
         process.exit(1);
       }
