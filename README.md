@@ -15,6 +15,8 @@
 
 MCP-enabled PostgreSQL tool that lets AI assistants execute SQL directly. Also works as a CLI for humans.
 
+**This is for the brave and the bold, the kind of person who enjoy their Claude Code rides with `--dangerously-skip-permissions`**
+
 ## 🤖 For AI Assistants (Primary Use)
 
 sequelae-cli implements the Model Context Protocol (MCP), allowing AI assistants like Claude to execute SQL queries directly on PostgreSQL databases.
