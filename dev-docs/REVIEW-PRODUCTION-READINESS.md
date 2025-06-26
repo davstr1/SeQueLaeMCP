@@ -59,7 +59,7 @@ The codebase is nearly production-ready with robust error handling, comprehensiv
 
 **Missing:**
 - Performance benchmarks in main README
-- Migration guide from other tools
+- Migration guide from other tools - SKIP
 - Advanced configuration examples
 
 ## 🔧 Minor Issues (5-6/10)
@@ -73,7 +73,7 @@ The codebase is nearly production-ready with robust error handling, comprehensiv
 
 ### 7. **Node.js Support (5/10)**
 - Currently supports Node 14.x which reached EOL
-- Should update minimum to Node 18.x (LTS)
+- Should update minimum to Node 18.x (LTS) -- CRITICAL !!!
 
 ### 8. **Repository Configuration (5/10)**
 - Package.json has placeholder GitHub URLs
