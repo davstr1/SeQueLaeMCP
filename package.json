@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/davstr1/SeQueLaeMCP.git"
+    "url": "git+https://github.com/davstr1/SeQueLaeMCP.git"
   },
   "homepage": "https://github.com/davstr1/SeQueLaeMCP#readme",
   "bugs": {
@@ -40,8 +40,8 @@
     "model-context-protocol"
   ],
   "bin": {
-    "sequelae": "./bin/sequelae",
-    "smcp": "./bin/sequelae"
+    "sequelae": "bin/sequelae",
+    "smcp": "bin/sequelae"
   },
   "scripts": {
     "build": "tsc",
@@ -55,8 +55,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepublishOnly": "npm run lint && npm run build",
-    "postinstall": "husky install",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "dependencies": {
     "dotenv": "^16.0.0",
