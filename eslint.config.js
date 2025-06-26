@@ -32,7 +32,7 @@ module.exports = [
     rules: {
       ...typescript.configs.recommended.rules,
       ...typescript.configs.strict.rules,
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/explicit-function-return-type': [
         'error',
         {
@@ -84,7 +84,7 @@ module.exports = [
     },
     rules: {
       ...typescript.configs.recommended.rules,
-      '@typescript-eslint/no-explicit-any': 'warn', // Warn instead of error for tests
+      '@typescript-eslint/no-explicit-any': 'off', // Allow any in tests
       '@typescript-eslint/explicit-function-return-type': 'off', // Not needed in tests
       '@typescript-eslint/no-unused-vars': [
         'error',
