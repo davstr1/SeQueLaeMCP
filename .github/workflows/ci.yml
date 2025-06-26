@@ -151,8 +151,13 @@ jobs:
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
+          # Check if version exists on npm
+          if npm view sequelae-mcp@$CURRENT_VERSION version 2>/dev/null; then
+            echo "Version $CURRENT_VERSION already published on npm"
+            echo "version_changed=false" >> $GITHUB_OUTPUT
           # Check if tag exists
-          if git rev-parse "v$CURRENT_VERSION" >/dev/null 2>&1; then
+          elif git rev-parse "v$CURRENT_VERSION" >/dev/null 2>&1; then
+            echo "Git tag v$CURRENT_VERSION already exists"
             echo "version_changed=false" >> $GITHUB_OUTPUT
           else
             echo "version_changed=true" >> $GITHUB_OUTPUT
