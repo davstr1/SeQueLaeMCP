@@ -14,26 +14,37 @@ CI tests are failing due to ESLint treating TypeScript `any` warnings as errors 
 - ✅ TypeScript build successful
 - ❌ ESLint failing due to `any` type warnings
 
-## Missing Secrets (Not Causing Failures)
-- `CODECOV_TOKEN`: Missing but has `fail_ci_if_error: false`
-- `NODE_AUTH_TOKEN`: Missing but only needed for npm publish step
+## Secrets Issue (Not Causing Failures)
+- `CODECOV_TOKEN`: Shows as missing in CI but reportedly added to GitHub
+- `NODE_AUTH_TOKEN`: Shows as missing in CI but reportedly added to GitHub
+- Possible causes:
+  - Secrets might be added to wrong environment (e.g., environment-specific vs repository secrets)
+  - Branch protection rules might be preventing secrets access on PRs from forks
+  - Secrets names might have typos or case sensitivity issues
+- Note: These aren't causing the test failures (codecov has `fail_ci_if_error: false`)
 
 ## Actionable Checklist
 
-### Immediate Fix (MVP Approach)
-- [ ] Update `eslint.config.js` to disable `@typescript-eslint/no-explicit-any` rule
-- [ ] Change from `warn` to `off` in both source and test configurations
-- [ ] Push fix to trigger CI rebuild
+### Proper Fix (Type Safety)
+- [ ] Fix the 20 `any` type warnings by adding proper types
+- [ ] Focus on the specific files flagged:
+  - [ ] `tests/cli-schema.test.ts` - Line 40
+  - [ ] `tests/cli-file.test.ts` - Lines 45, 47
+  - [ ] `tests/cli-exec.test.ts` - Lines 40, 42
+  - [ ] `tests/backup-basic.test.ts` - Line 26
+  - [ ] `src/mcp/tool-handler.ts` - Lines 368, 406
+  - [ ] `src/cli.ts` - Lines 40, 44
+- [ ] Use `unknown` instead of `any` where type is truly unknown
+- [ ] Add proper type definitions for error objects and responses
 
-### Alternative Solutions (If Needed)
-- [ ] Add `--max-warnings 0` flag to lint command to allow warnings
-- [ ] Configure CI to ignore lint warnings
-- [ ] Add proper types to replace `any` (enterprise approach - not recommended for MVP)
+### Quick Fix (If Urgent)
+- [ ] Change ESLint rule from `warn` to `error` and fix all issues
+- [ ] Or temporarily allow warnings in CI with `--max-warnings 100`
 
 ### Verification Steps
-- [ ] Confirm CI passes after ESLint fix
-- [ ] Verify all tests still run successfully
-- [ ] Check that build artifacts are created
+- [ ] Confirm all types are properly defined
+- [ ] Verify CI passes without disabling type safety
+- [ ] Ensure no runtime type errors
 
 ## Recommendation
-Go with the immediate fix - disable the `any` rule. This is an MVP, not enterprise software. The tests work, the code works, we just need CI to stop being pedantic about TypeScript strictness.
+Fix the actual type issues. Even for an MVP, type safety prevents bugs. The 20 warnings are manageable - probably just need to type error objects and response data properly. Using `any` defeats the purpose of TypeScript.
