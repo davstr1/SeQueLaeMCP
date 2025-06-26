@@ -4,6 +4,7 @@ import { readFileSync, existsSync, statSync, accessSync, constants } from 'fs';
 import { resolve, dirname, isAbsolute, normalize } from 'path';
 import { spawn } from 'child_process';
 import { BackupOptions, BackupResult } from '../types/backup';
+import { logger } from '../utils/logger';
 
 export interface QueryResult {
   command?: string;
@@ -141,7 +142,7 @@ export class SqlExecutor {
         try {
           await client.query('ROLLBACK');
         } catch (rollbackError) {
-          console.error('Error during rollback:', rollbackError);
+          logger.error('Error during rollback:', { error: rollbackError });
         }
       }
       throw error;

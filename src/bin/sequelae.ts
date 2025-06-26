@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { SqlAgentMcpServer } from '../mcp';
+import { logger } from '../utils/logger';
 
 // Check if running in MCP mode
 const args = process.argv.slice(2);
@@ -23,6 +24,6 @@ async function main(): Promise<void> {
 }
 
 main().catch(error => {
-  console.error('Fatal error:', error);
+  logger.error('Fatal error:', error);
   process.exit(1);
 });

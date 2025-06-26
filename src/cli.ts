@@ -7,6 +7,7 @@ import { resolve } from 'path';
 import * as packageJson from '../package.json';
 import { SqlExecutor } from './core/sql-executor';
 import { BackupOptions } from './types/backup';
+import { logger } from './utils/logger';
 
 interface Constraint {
   constraint_type: string;
@@ -25,6 +26,27 @@ interface Column {
 // Load .env from the package root (handles both root and subdirectory execution)
 const envPath = resolve(__dirname, '../.env');
 config({ path: envPath });
+
+// CLI output helpers that maintain console output but also log
+const cliOutput = {
+  log: (message: string) => {
+    console.log(message);
+    logger.debug('CLI output:', { message });
+  },
+  error: (message: string) => {
+    console.error(message);
+    logger.error('CLI error:', { message });
+  },
+  table: (data: any) => {
+    console.table(data);
+    logger.debug('CLI table output:', { rowCount: Array.isArray(data) ? data.length : 'N/A' });
+  },
+  json: (data: any) => {
+    const json = JSON.stringify(data);
+    console.log(json);
+    logger.debug('CLI JSON output:', { data });
+  },
+};
 
 export function handleVersion(jsonMode: boolean): string {
   if (jsonMode) {
@@ -308,7 +330,7 @@ async function cleanupPool(pool: Pool): Promise<void> {
   try {
     await pool.end();
   } catch (error) {
-    console.error('Error closing database pool:', error);
+    cliOutput.error(`Error closing database pool: ${error}`);
   }
 }
 
@@ -350,7 +372,7 @@ async function main(): Promise<void> {
 
   // Skip header when running in Jest or JSON mode
   if (typeof jest === 'undefined' && !jsonMode) {
-    console.log('🔗 sequelae-mcp - PostgreSQL SQL executor\n');
+    cliOutput.log('🔗 sequelae-mcp - PostgreSQL SQL executor\n');
   }
 
   // Handle no arguments
@@ -358,9 +380,9 @@ async function main(): Promise<void> {
     const error = createNoCommandError();
     const output = formatError(error.message, jsonMode, error.hint);
     if (jsonMode) {
-      console.log(output);
+      cliOutput.json(JSON.parse(output));
     } else {
-      console.error(output);
+      cliOutput.error(output);
     }
     process.exit(1);
   }
@@ -368,21 +390,33 @@ async function main(): Promise<void> {
   // Handle help
   if (filteredArgs[0] === '--help' || filteredArgs[0] === '-h') {
     const output = handleHelp(jsonMode);
-    console.log(output);
+    if (jsonMode) {
+      cliOutput.json(JSON.parse(output));
+    } else {
+      cliOutput.log(output);
+    }
     process.exit(0);
   }
 
   // Handle version
   if (filteredArgs[0] === '--version' || filteredArgs[0] === '-v') {
     const output = handleVersion(jsonMode);
-    console.log(output);
+    if (jsonMode) {
+      cliOutput.json(JSON.parse(output));
+    } else {
+      cliOutput.log(output);
+    }
     process.exit(0);
   }
 
   // Handle exit command
   if (filteredArgs[0] === 'exit' || filteredArgs[0] === 'quit') {
     const output = handleExit(jsonMode);
-    console.log(output);
+    if (jsonMode) {
+      cliOutput.json(JSON.parse(output));
+    } else {
+      cliOutput.log(output);
+    }
     process.exit(0);
   }
 
@@ -396,9 +430,9 @@ async function main(): Promise<void> {
   const dbError = validateDatabaseUrl(databaseUrl, jsonMode);
   if (dbError) {
     if (jsonMode) {
-      console.log(dbError);
+      cliOutput.json(JSON.parse(dbError));
     } else {
-      console.error(dbError);
+      cliOutput.error(dbError);
     }
     process.exit(1);
   }
@@ -414,9 +448,9 @@ async function main(): Promise<void> {
         const error = createNoSqlQueryError();
         const output = formatError(error.message, jsonMode, error.hint);
         if (jsonMode) {
-          console.log(output);
+          cliOutput.json(JSON.parse(output));
         } else {
-          console.error(output);
+          cliOutput.error(output);
         }
         await cleanupPool(pool);
         process.exit(1);
@@ -427,9 +461,9 @@ async function main(): Promise<void> {
         const error = createNoFilePathError();
         const output = formatError(error.message, jsonMode, error.hint);
         if (jsonMode) {
-          console.log(output);
+          cliOutput.json(JSON.parse(output));
         } else {
-          console.error(output);
+          cliOutput.error(output);
         }
         await cleanupPool(pool);
         process.exit(1);
@@ -441,9 +475,9 @@ async function main(): Promise<void> {
         const error = createFileNotFoundError(filepath);
         const output = formatError(error.message, jsonMode, error.hint);
         if (jsonMode) {
-          console.log(output);
+          cliOutput.json(JSON.parse(output));
         } else {
-          console.error(output);
+          cliOutput.error(output);
         }
         await cleanupPool(pool);
         process.exit(1);
@@ -464,9 +498,9 @@ async function main(): Promise<void> {
 
         if (tableList.length === 0) {
           if (jsonMode) {
-            console.log(JSON.stringify({ error: 'No table names provided' }));
+            cliOutput.json({ error: 'No table names provided' });
           } else {
-            console.error('Error: No table names provided');
+            cliOutput.error('Error: No table names provided');
           }
           await cleanupPool(pool);
           process.exit(1);
@@ -626,9 +660,9 @@ async function main(): Promise<void> {
     } else if (filteredArgs[0] === 'exec' || filteredArgs[0] === 'file') {
       // Command recognized but missing argument
       if (jsonMode) {
-        console.log(JSON.stringify({ error: `Missing argument for ${filteredArgs[0]} command` }));
+        cliOutput.json({ error: `Missing argument for ${filteredArgs[0]} command` });
       } else {
-        console.error(`Error: Missing argument for ${filteredArgs[0]} command`);
+        cliOutput.error(`Error: Missing argument for ${filteredArgs[0]} command`);
       }
       await cleanupPool(pool);
       process.exit(1);
@@ -668,41 +702,37 @@ async function main(): Promise<void> {
 
           // Show progress
           if (!jsonMode) {
-            console.log('Creating backup...');
+            cliOutput.log('Creating backup...');
           }
 
           const result = await executor.backup(options);
 
           if (result.success) {
             if (jsonMode) {
-              console.log(
-                JSON.stringify({
-                  success: true,
-                  outputPath: result.outputPath,
-                  size: result.size,
-                  duration: result.duration,
-                })
-              );
+              cliOutput.json({
+                success: true,
+                outputPath: result.outputPath,
+                size: result.size,
+                duration: result.duration,
+              });
             } else {
-              console.log(`\n✅ Backup completed successfully!`);
-              console.log(`📁 Output: ${result.outputPath}`);
+              cliOutput.log(`\n✅ Backup completed successfully!`);
+              cliOutput.log(`📁 Output: ${result.outputPath}`);
               if (result.size) {
-                console.log(`📊 Size: ${(result.size / 1024 / 1024).toFixed(2)} MB`);
+                cliOutput.log(`📊 Size: ${(result.size / 1024 / 1024).toFixed(2)} MB`);
               }
-              console.log(`⏱️  Duration: ${(result.duration / 1000).toFixed(2)}s`);
+              cliOutput.log(`⏱️  Duration: ${(result.duration / 1000).toFixed(2)}s`);
             }
             await cleanupPool(pool);
             process.exit(0);
           } else {
             if (jsonMode) {
-              console.log(
-                JSON.stringify({
-                  success: false,
-                  error: result.error,
-                })
-              );
+              cliOutput.json({
+                success: false,
+                error: result.error,
+              });
             } else {
-              console.error(`\n❌ Backup failed: ${result.error}`);
+              cliOutput.error(`\n❌ Backup failed: ${result.error}`);
             }
             await cleanupPool(pool);
             process.exit(1);
@@ -710,9 +740,9 @@ async function main(): Promise<void> {
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           if (jsonMode) {
-            console.log(JSON.stringify({ error: errorMessage }));
+            cliOutput.json({ error: errorMessage });
           } else {
-            console.error(`Error: ${errorMessage}`);
+            cliOutput.error(`Error: ${errorMessage}`);
           }
           await cleanupPool(pool);
           process.exit(1);
@@ -722,10 +752,10 @@ async function main(): Promise<void> {
       } else {
         // Unknown command
         if (jsonMode) {
-          console.log(JSON.stringify({ error: `Unknown command: ${filteredArgs[0]}` }));
+          cliOutput.json({ error: `Unknown command: ${filteredArgs[0]}` });
         } else {
-          console.error(`Error: Unknown command: ${filteredArgs[0]}`);
-          console.error('Run sequelae --help for usage information');
+          cliOutput.error(`Error: Unknown command: ${filteredArgs[0]}`);
+          cliOutput.error('Run sequelae --help for usage information');
         }
         await cleanupPool(pool);
         process.exit(1);
@@ -755,11 +785,11 @@ async function main(): Promise<void> {
         rows: result.rows || [],
         duration: result.duration || 0,
       };
-      console.log(JSON.stringify(output));
+      cliOutput.json(output);
     } else {
       // Special handling for schema command
       if (filteredArgs[0] === 'schema' && result.rows && result.rows.length > 0) {
-        console.log('DATABASE SCHEMA:\n');
+        cliOutput.log('DATABASE SCHEMA:\n');
 
         // Separate found and missing tables
         const foundTables = result.rows.filter(r => r.type === 'found');
@@ -767,24 +797,24 @@ async function main(): Promise<void> {
 
         // Display found tables
         for (const table of foundTables) {
-          console.log(`📋 ${table.table_schema}.${table.table_name}`);
+          cliOutput.log(`📋 ${table.table_schema}.${table.table_name}`);
 
           // Display columns
           const columns: Column[] = JSON.parse(table.columns as string);
-          console.log('  Columns:');
+          cliOutput.log('  Columns:');
           for (const col of columns) {
             const nullable = col.is_nullable === 'YES' ? ' (nullable)' : '';
             const dataType = col.character_maximum_length
               ? `${col.data_type}(${col.character_maximum_length})`
               : col.data_type;
             const defaultVal = col.column_default ? ` DEFAULT ${col.column_default}` : '';
-            console.log(`    - ${col.column_name}: ${dataType}${nullable}${defaultVal}`);
+            cliOutput.log(`    - ${col.column_name}: ${dataType}${nullable}${defaultVal}`);
           }
 
           // Display constraints
           const constraints: Constraint[] = JSON.parse(table.constraints as string);
           if (constraints.length > 0) {
-            console.log('  Constraints:');
+            cliOutput.log('  Constraints:');
             const constraintsByType = constraints.reduce(
               (acc: Record<string, Constraint[]>, c: Constraint) => {
                 if (!acc[c.constraint_type]) acc[c.constraint_type] = [];
@@ -796,30 +826,30 @@ async function main(): Promise<void> {
 
             for (const [type, consts] of Object.entries(constraintsByType)) {
               const columns = consts.map(c => c.column_name).join(', ');
-              console.log(`    - ${type}: ${columns}`);
+              cliOutput.log(`    - ${type}: ${columns}`);
             }
           }
-          console.log('');
+          cliOutput.log('');
         }
 
         // Display missing tables with suggestions
         if (missingTables.length > 0) {
-          console.log('❌ TABLES NOT FOUND:\n');
+          cliOutput.log('❌ TABLES NOT FOUND:\n');
           for (const missing of missingTables) {
-            console.log(`  - "${missing.missing_table}"`);
+            cliOutput.log(`  - "${missing.missing_table}"`);
             if (missing.suggestions) {
-              console.log(`    Did you mean: ${missing.suggestions}?`);
+              cliOutput.log(`    Did you mean: ${missing.suggestions}?`);
             }
           }
-          console.log('');
+          cliOutput.log('');
         }
       } else if (result.rows && result.rows.length > 0) {
-        console.table(result.rows);
+        cliOutput.table(result.rows);
       }
 
       // Show execution info
       const command = result.command || 'Query executed';
-      console.log(
+      cliOutput.log(
         `\n✓ ${command} ${result.rowCount ? `(${result.rowCount} rows)` : ''} - ${result.duration}ms`
       );
     }
@@ -831,11 +861,11 @@ async function main(): Promise<void> {
         error: err.message,
         position: err.position,
       };
-      console.log(JSON.stringify(errorOutput));
+      cliOutput.json(errorOutput);
     } else {
-      console.error('\nError:', err.message);
+      cliOutput.error(`\nError: ${err.message}`);
       if (err.position) {
-        console.error(`Position: ${err.position}`);
+        cliOutput.error(`Position: ${err.position}`);
       }
     }
     await pool.end();
@@ -846,7 +876,7 @@ async function main(): Promise<void> {
   try {
     await pool.end();
   } catch (error) {
-    console.error('Error closing database pool:', error);
+    cliOutput.error(`Error closing database pool: ${error}`);
   }
   process.exit(0);
 }
@@ -858,18 +888,18 @@ export { main };
 if (require.main === module) {
   // Run main and handle unhandled errors
   main().catch(async error => {
-    console.error(error);
+    cliOutput.error(String(error));
     process.exit(1);
   });
 
   // Handle process errors properly
   process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    cliOutput.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
     process.exit(1);
   });
 
   process.on('uncaughtException', error => {
-    console.error('Uncaught Exception:', error);
+    cliOutput.error(`Uncaught Exception: ${error}`);
     process.exit(1);
   });
 }

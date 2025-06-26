@@ -1,4 +1,5 @@
 import { Pool, PoolConfig } from 'pg';
+import { logger } from '../utils/logger';
 
 export interface PoolManagerConfig {
   connectionString: string;
@@ -58,7 +59,7 @@ export class PoolManager {
 
     // Handle pool errors
     this.pool.on('error', err => {
-      console.error('Unexpected error on idle client', err);
+      logger.error('Unexpected error on idle client', { error: err });
     });
   }
 
