@@ -1,4 +1,4 @@
-# sql-agent-cli
+# sequelae-mcp
 
 MCP-enabled PostgreSQL tool that lets AI assistants execute SQL directly. Also works as a CLI for humans.
 
