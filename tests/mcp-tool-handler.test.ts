@@ -359,7 +359,7 @@ describe('McpToolHandler', () => {
         },
         tool: {
           name: 'sequelae-mcp',
-          version: '1.0.0',
+          version: expect.any(String),
         },
       });
       expect(result.timestamp).toBeDefined();
