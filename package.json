@@ -25,8 +25,8 @@
     "model-context-protocol"
   ],
   "bin": {
-    "sql-agent": "./bin/sql-agent",
-    "ssql": "./bin/sql-agent"
+    "sequelae": "./bin/sequelae",
+    "smcp": "./bin/sequelae"
   },
   "scripts": {
     "build": "tsc",
