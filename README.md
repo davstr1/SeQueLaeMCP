@@ -16,8 +16,8 @@ sequelae-cli implements the Model Context Protocol (MCP), allowing AI assistants
 ### Quick Start
 
 1. **Install sequelae-mcp in your project:**
+   Navigate to your project directory and run:
    ```bash
-   cd /path/to/your/project
    npm install sequelae-mcp
    ```
 
@@ -37,7 +37,7 @@ sequelae-cli implements the Model Context Protocol (MCP), allowing AI assistants
        "sequelae": {
          "command": "npx",
          "args": ["sequelae-mcp", "--mcp"],
-         "cwd": "/path/to/your/project"
+         "cwd": "/Users/username/projects/myproject"
        }
      }
    }
@@ -45,18 +45,20 @@ sequelae-cli implements the Model Context Protocol (MCP), allowing AI assistants
    
    **For Claude Code (CLI):**
    ```bash
-   # One-time setup: Navigate to your project and add sequelae
-   cd /path/to/your/project
    claude mcp add sequelae npx sequelae-mcp --mcp
-   
-   # From now on, just start Claude Code
-   claude
-   # Claude automatically launches sequelae when it starts!
-   
-   # Optional: Check MCP server status
-   > /mcp
-   # Should show: sequelae: connected ✓
    ```
+   
+   From now on, just start Claude Code:
+   ```bash
+   claude
+   ```
+   Claude automatically launches sequelae when it starts!
+   
+   Optional: Check MCP server status
+   ```
+   /mcp
+   ```
+   Should show: `sequelae: connected ✓`
 
    **For Cursor.AI:**
    Create `.cursor/mcp.json` in your home directory or project:
