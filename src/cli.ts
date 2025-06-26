@@ -4,6 +4,8 @@ import { config } from 'dotenv';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import * as packageJson from '../package.json';
+import { SqlExecutor } from './core/sql-executor';
+import { BackupOptions } from './types/backup';
 
 interface Constraint {
   constraint_type: string;
@@ -40,6 +42,7 @@ export function handleHelp(jsonMode: boolean): string {
         'sequelae schema                   Show all tables in public schema',
         'sequelae schema [tables]          Show specific table(s) - comma separated',
         'sequelae schema --all             Show all schemas including system tables',
+        'sequelae backup                   Create a database backup',
         'sequelae exit                     Exit sequelae',
         'sequelae --json                   Output results in JSON format',
       ],
@@ -49,6 +52,8 @@ export function handleHelp(jsonMode: boolean): string {
         'sequelae file migrations/001_init.sql',
         'sequelae schema',
         'sequelae schema users,posts',
+        'sequelae backup --output db_backup.sql',
+        'sequelae backup --tables users,posts --format custom',
         'sequelae --json exec "SELECT * FROM users"',
       ],
     });
@@ -60,6 +65,7 @@ Usage:
   sequelae schema                   Show all tables in public schema
   sequelae schema [tables]          Show specific table(s) - comma separated
   sequelae schema --all             Show all schemas including system tables
+  sequelae backup                   Create a database backup
   sequelae exit                     Exit sequelae
   sequelae --json                   Output results in JSON format
   
@@ -69,6 +75,8 @@ Examples:
   sequelae file migrations/001_init.sql
   sequelae schema
   sequelae schema users,posts
+  sequelae backup --output db_backup.sql
+  sequelae backup --tables users,posts --format custom
   sequelae --json exec "SELECT * FROM users"
     `;
   }
@@ -567,6 +575,82 @@ async function main(): Promise<void> {
       if (sqlKeywords.includes(firstWord)) {
         // Direct SQL command
         sql = filteredArgs.join(' ');
+      } else if (filteredArgs[0] === 'backup') {
+        // Handle backup command
+        const executor = new SqlExecutor(databaseUrl as string);
+        try {
+          // Parse backup options
+          const options: BackupOptions = {};
+
+          for (let i = 1; i < filteredArgs.length; i++) {
+            const arg = filteredArgs[i];
+            if (arg === '--format' && i + 1 < filteredArgs.length) {
+              options.format = filteredArgs[++i] as 'plain' | 'custom' | 'directory' | 'tar';
+            } else if (arg === '--tables' && i + 1 < filteredArgs.length) {
+              options.tables = filteredArgs[++i].split(',').map(t => t.trim());
+            } else if (arg === '--schemas' && i + 1 < filteredArgs.length) {
+              options.schemas = filteredArgs[++i].split(',').map(s => s.trim());
+            } else if (arg === '--output' && i + 1 < filteredArgs.length) {
+              options.outputPath = filteredArgs[++i];
+            } else if (arg === '--data-only') {
+              options.dataOnly = true;
+            } else if (arg === '--schema-only') {
+              options.schemaOnly = true;
+            } else if (arg === '--compress') {
+              options.compress = true;
+            }
+          }
+
+          // Show progress
+          if (!jsonMode) {
+            console.log('Creating backup...');
+          }
+
+          const result = await executor.backup(options);
+
+          if (result.success) {
+            if (jsonMode) {
+              console.log(
+                JSON.stringify({
+                  success: true,
+                  outputPath: result.outputPath,
+                  size: result.size,
+                  duration: result.duration,
+                })
+              );
+            } else {
+              console.log(`\n✅ Backup completed successfully!`);
+              console.log(`📁 Output: ${result.outputPath}`);
+              if (result.size) {
+                console.log(`📊 Size: ${(result.size / 1024 / 1024).toFixed(2)} MB`);
+              }
+              console.log(`⏱️  Duration: ${(result.duration / 1000).toFixed(2)}s`);
+            }
+            process.exit(0);
+          } else {
+            if (jsonMode) {
+              console.log(
+                JSON.stringify({
+                  success: false,
+                  error: result.error,
+                })
+              );
+            } else {
+              console.error(`\n❌ Backup failed: ${result.error}`);
+            }
+            process.exit(1);
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          if (jsonMode) {
+            console.log(JSON.stringify({ error: errorMessage }));
+          } else {
+            console.error(`Error: ${errorMessage}`);
+          }
+          process.exit(1);
+        } finally {
+          await executor.close();
+        }
       } else {
         // Unknown command
         if (jsonMode) {

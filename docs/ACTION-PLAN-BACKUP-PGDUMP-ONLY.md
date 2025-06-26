@@ -31,13 +31,13 @@
 
 ### Phase 4: CLI Command Implementation
 
-- [ ] Add 'backup' command to CLI switch statement
-- [ ] Parse command line arguments for backup options
-- [ ] Add `--tables`, `--schemas`, `--format`, `--output` flags
-- [ ] Add `--data-only` and `--schema-only` flags
-- [ ] Add `--compress` flag
-- [ ] Implement progress indicator for long operations
-- [ ] Display backup result summary
+- [x] Add 'backup' command to CLI switch statement
+- [x] Parse command line arguments for backup options
+- [x] Add `--tables`, `--schemas`, `--format`, `--output` flags
+- [x] Add `--data-only` and `--schema-only` flags
+- [x] Add `--compress` flag
+- [x] Implement progress indicator for long operations
+- [x] Display backup result summary
 
 ### Phase 5: Error Handling & Validation
 

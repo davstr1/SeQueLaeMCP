@@ -51,11 +51,12 @@ Don't stop until the process is totally finished.
 --X  
 Don't touch the codebase, except for the one file specified (if any).
 
---READY? --MIND --X then --WD about is this codebase 100% production ready ? 
-- Is the error handling on point
-- do we have good enough test coverage ?
-- are the tests actually useful, or are they just make belief to check some boxes ?
-- are tests pre commit executed ?
+--READY? --MIND --X then --WD about is this codebase 100% production ready, and what's still lacking if not ? 
+- Is error handling robust and consistent?
+- Is test coverage meaningful and adequate?
+- Do the tests catch real issues, or are they just for show?
+- Are tests run pre-commit?
+- Is the README clear, concise, and covers install/run/debug basics?
 
 ---
 
