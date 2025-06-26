@@ -4,7 +4,7 @@ MCP-enabled PostgreSQL tool that lets AI assistants execute SQL directly. Also w
 
 ## 🤖 For AI Assistants (Primary Use)
 
-sql-agent-cli implements the Model Context Protocol (MCP), allowing AI assistants like Claude to execute SQL queries directly on PostgreSQL databases.
+sequelae-cli implements the Model Context Protocol (MCP), allowing AI assistants like Claude to execute SQL queries directly on PostgreSQL databases.
 
 ### Quick Start
 ```bash
@@ -12,7 +12,7 @@ sql-agent-cli implements the Model Context Protocol (MCP), allowing AI assistant
 npm install -D sequelae-mcp
 
 # Run as MCP server
-npx sql-agent --mcp
+npx sequelae --mcp
 ```
 
 ### Available MCP Tools
@@ -66,7 +66,7 @@ AI assistants like Claude are supposed to build entire apps, but they can't dire
 - 🏗️ AI building complex DB adapters that fail
 - 😤 Frustration and wasted tokens
 
-**sql-agent-cli solves this by giving AI direct database access via MCP protocol.**
+**sequelae-cli solves this by giving AI direct database access via MCP protocol.**
 
 ---
 
@@ -94,8 +94,8 @@ Add to your `CLAUDE.md` or AI instructions:
 ## Database Access
 
 Direct PostgreSQL access via MCP:
-- Tool: sql-agent-cli
-- Start: `npx sql-agent --mcp`
+- Tool: sequelae-cli
+- Start: `npx sequelae --mcp`
 - Queries: Use `sql_exec` tool
 - Schema: Use `sql_schema` tool
 ````
@@ -104,34 +104,34 @@ Direct PostgreSQL access via MCP:
 
 ## 👤 CLI Mode (For Humans)
 
-When not using MCP, sql-agent works as a traditional CLI:
+When not using MCP, sequelae works as a traditional CLI:
 
 ### Basic Commands
 ```bash
 # Execute SQL
-npx sql-agent exec "SELECT * FROM users"
+npx sequelae exec "SELECT * FROM users"
 
 # Run SQL file
-npx sql-agent file migrations/001_init.sql
+npx sequelae file migrations/001_init.sql
 
 # Get schema
-npx sql-agent schema
-npx sql-agent schema users,posts  # Specific tables
+npx sequelae schema
+npx sequelae schema users,posts  # Specific tables
 
 # JSON output
-npx sql-agent exec "SELECT * FROM users" --json
+npx sequelae exec "SELECT * FROM users" --json
 ```
 
 ### Examples
 ```bash
 # Create table
-npx sql-agent exec "CREATE TABLE posts (id serial PRIMARY KEY, title text)"
+npx sequelae exec "CREATE TABLE posts (id serial PRIMARY KEY, title text)"
 
 # Insert data
-npx sql-agent exec "INSERT INTO posts (title) VALUES ('Hello') RETURNING *"
+npx sequelae exec "INSERT INTO posts (title) VALUES ('Hello') RETURNING *"
 
 # Export data
-npx sql-agent exec "SELECT * FROM posts" --json > posts.json
+npx sequelae exec "SELECT * FROM posts" --json > posts.json
 ```
 
 ---
