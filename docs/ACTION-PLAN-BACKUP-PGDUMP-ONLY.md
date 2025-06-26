@@ -4,10 +4,10 @@
 
 ### Phase 1: Core Types and Interfaces
 
-- [ ] Create `src/types/backup.ts` file
-- [ ] Define `BackupOptions` interface with format, tables, schemas, dataOnly, schemaOnly, compress, outputPath
-- [ ] Define `BackupResult` interface with success, outputPath, size, duration, error fields
-- [ ] Export types from main index.ts
+- [x] Create `src/types/backup.ts` file
+- [x] Define `BackupOptions` interface with format, tables, schemas, dataOnly, schemaOnly, compress, outputPath
+- [x] Define `BackupResult` interface with success, outputPath, size, duration, error fields
+- [x] Export types from main index.ts
 
 ### Phase 2: Core Backup Implementation
 

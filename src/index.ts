@@ -20,5 +20,8 @@ export type {
   MissingTableInfo,
 } from './core/sql-executor';
 
+// Export backup types
+export type { BackupOptions, BackupResult } from './types/backup';
+
 // Export CLI utilities (for programmatic use)
 export { main as runCli } from './cli';
