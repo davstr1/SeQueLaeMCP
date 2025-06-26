@@ -265,6 +265,14 @@ export function buildSchemaCondition(allSchemas: boolean): string {
     : "table_schema = 'public'";
 }
 
+async function cleanupPool(pool: Pool): Promise<void> {
+  try {
+    await pool.end();
+  } catch (error) {
+    console.error('Error closing database pool:', error);
+  }
+}
+
 export function buildTableList(tables: string): string[] {
   return tables
     .split(',')
@@ -358,6 +366,7 @@ async function main(): Promise<void> {
         } else {
           console.error(output);
         }
+        await cleanupPool(pool);
         process.exit(1);
       }
       sql = filteredArgs[1];
@@ -370,6 +379,7 @@ async function main(): Promise<void> {
         } else {
           console.error(output);
         }
+        await cleanupPool(pool);
         process.exit(1);
       }
       const filepath = resolve(process.cwd(), filteredArgs[1]);
@@ -383,6 +393,7 @@ async function main(): Promise<void> {
         } else {
           console.error(output);
         }
+        await cleanupPool(pool);
         process.exit(1);
       }
 
@@ -405,6 +416,7 @@ async function main(): Promise<void> {
           } else {
             console.error('Error: No table names provided');
           }
+          await cleanupPool(pool);
           process.exit(1);
         }
 
@@ -566,6 +578,7 @@ async function main(): Promise<void> {
       } else {
         console.error(`Error: Missing argument for ${filteredArgs[0]} command`);
       }
+      await cleanupPool(pool);
       process.exit(1);
     } else {
       // Check if it looks like a SQL command
@@ -626,6 +639,7 @@ async function main(): Promise<void> {
               }
               console.log(`⏱️  Duration: ${(result.duration / 1000).toFixed(2)}s`);
             }
+            await cleanupPool(pool);
             process.exit(0);
           } else {
             if (jsonMode) {
@@ -638,6 +652,7 @@ async function main(): Promise<void> {
             } else {
               console.error(`\n❌ Backup failed: ${result.error}`);
             }
+            await cleanupPool(pool);
             process.exit(1);
           }
         } catch (error) {
@@ -647,6 +662,7 @@ async function main(): Promise<void> {
           } else {
             console.error(`Error: ${errorMessage}`);
           }
+          await cleanupPool(pool);
           process.exit(1);
         } finally {
           await executor.close();
@@ -659,6 +675,7 @@ async function main(): Promise<void> {
           console.error(`Error: Unknown command: ${filteredArgs[0]}`);
           console.error('Run sequelae --help for usage information');
         }
+        await cleanupPool(pool);
         process.exit(1);
       }
     }
@@ -767,8 +784,8 @@ async function main(): Promise<void> {
   // Success - close pool and exit cleanly
   try {
     await pool.end();
-  } catch (_e) {
-    // Ignore pool cleanup errors
+  } catch (error) {
+    console.error('Error closing database pool:', error);
   }
   process.exit(0);
 }
