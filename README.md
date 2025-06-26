@@ -47,6 +47,18 @@ npx sequelae --mcp
 }
 ```
 
+#### `sql_backup` - Create database backups
+```json
+{
+  "name": "sql_backup",
+  "arguments": {
+    "format": "custom",      // plain, custom, tar, directory
+    "compress": true,        // Enable compression
+    "outputPath": "backup.dump"
+  }
+}
+```
+
 ### Example MCP Session
 ```json
 // Request
@@ -98,6 +110,7 @@ Direct PostgreSQL access via MCP:
 - Start: `npx sequelae --mcp`
 - Queries: Use `sql_exec` tool
 - Schema: Use `sql_schema` tool
+- Backups: Use `sql_backup` tool
 ````
 
 ---
@@ -120,6 +133,10 @@ npx sequelae schema users,posts  # Specific tables
 
 # JSON output
 npx sequelae exec "SELECT * FROM users" --json
+
+# Create backup
+npx sequelae backup
+npx sequelae backup --output my_backup.sql
 ```
 
 ### Examples
@@ -132,6 +149,9 @@ npx sequelae exec "INSERT INTO posts (title) VALUES ('Hello') RETURNING *"
 
 # Export data
 npx sequelae exec "SELECT * FROM posts" --json > posts.json
+
+# Backup database
+npx sequelae backup --tables users,posts --format custom
 ```
 
 ---
@@ -152,9 +172,10 @@ npx sequelae exec "SELECT * FROM posts" --json > posts.json
 ## ⚠️ Limitations
 
 - PostgreSQL only
-- No connection pooling
-- No transaction support
+- No connection pooling (each command creates new connection)
+- No transaction support (each command auto-commits)
 - SSL certificate validation disabled by default
+- Backup requires pg_dump installed locally
 
 ---
 

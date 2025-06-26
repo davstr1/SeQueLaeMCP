@@ -55,6 +55,36 @@ npx sequelae schema users,posts,comments
 npx sequelae schema --json > schema.json
 ```
 
+### Database Backup
+```bash
+# Basic backup (creates timestamped .sql file)
+npx sequelae backup
+
+# Backup with custom filename
+npx sequelae backup --output my_backup.sql
+
+# Backup specific tables only
+npx sequelae backup --tables users,posts,comments --output partial_backup.sql
+
+# Custom format backup (more efficient, smaller)
+npx sequelae backup --format custom --output db.dump
+
+# Schema-only backup
+npx sequelae backup --schema-only --output schema_backup.sql
+
+# Data-only backup
+npx sequelae backup --data-only --output data_backup.sql
+
+# Compressed backup
+npx sequelae backup --format custom --compress --output compressed.dump
+
+# Backup specific schemas
+npx sequelae backup --schemas public,auth --output multi_schema.sql
+
+# Directory format (allows parallel restore)
+npx sequelae backup --format directory --output backup_dir/
+```
+
 ## MCP Mode Examples
 
 ### Initialize Connection
@@ -80,6 +110,11 @@ npx sequelae schema --json > schema.json
 ### Run Migration File
 ```json
 {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"sql_file","arguments":{"filepath":"migrations/001.sql"}}}
+```
+
+### Create Database Backup
+```json
+{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"sql_backup","arguments":{"format":"custom","compress":true,"outputPath":"backup.dump"}}}
 ```
 
 ## Common Patterns

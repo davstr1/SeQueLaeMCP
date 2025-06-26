@@ -50,6 +50,23 @@ Get database schema
 }
 ```
 
+### sql_backup
+Create a database backup using pg_dump
+```json
+{
+  "name": "sql_backup",
+  "arguments": {
+    "format": "custom",       // plain, custom, tar, directory
+    "tables": ["users"],      // specific tables (optional)
+    "schemas": ["public"],    // specific schemas (optional)
+    "dataOnly": false,        // backup only data
+    "schemaOnly": false,      // backup only schema
+    "compress": true,         // enable compression
+    "outputPath": "backup.dump"
+  }
+}
+```
+
 ## Full Example
 
 Request:

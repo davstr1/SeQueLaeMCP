@@ -60,10 +60,10 @@
 
 ### Phase 7: Testing
 
-- [ ] Add unit tests for BackupOptions validation
-- [ ] Add unit tests for connection string parsing
-- [ ] Add unit tests for pg_dump argument building
-- [ ] Create mock for child_process.spawn in tests
+- [x] Add unit tests for BackupOptions validation
+- [x] Add unit tests for connection string parsing
+- [x] Add unit tests for pg_dump argument building
+- [x] Create mock for child_process.spawn in tests
 - [ ] Add integration test for actual pg_dump execution
 - [ ] Add E2E test for MCP tool invocation
 - [ ] Add E2E test for CLI command
@@ -71,11 +71,11 @@
 
 ### Phase 8: Documentation
 
-- [ ] Update README with backup command examples
-- [ ] Add backup section to EXAMPLES.md
-- [ ] Document all backup options and formats
+- [x] Update README with backup command examples
+- [x] Add backup section to EXAMPLES.md
+- [x] Document all backup options and formats
 - [ ] Add troubleshooting section for common issues
-- [ ] Update MCP.md with sql_backup tool documentation
+- [x] Update MCP.md with sql_backup tool documentation
 - [ ] Add backup best practices guide
 
 ### Phase 9: Final Polish

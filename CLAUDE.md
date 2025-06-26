@@ -57,7 +57,9 @@ Don't touch the codebase, except for the one file specified (if any).
 - Do the tests catch real issues, or are they just for show?
 - Are tests run pre-commit?
 - Is the README clear, concise, and covers install/run/debug basics?
-- Do we have legacy code, forgotten code, forgotten todos rotting somewher ?
+- Do we have legacy code, dead code, forgotten todos rotting somewhere ?
+- Do we have deprecation warnings or other warnings somewhere ?
+- Are all the dependencies up to date ?
 
 ---
 

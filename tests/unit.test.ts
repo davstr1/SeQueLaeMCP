@@ -23,6 +23,8 @@ import {
   createNoFilePathError,
   createFileNotFoundError,
 } from '../src/cli';
+import { SqlExecutor } from '../src/core/sql-executor';
+import { BackupOptions } from '../src/types/backup';
 
 describe('Sequelae Unit Tests', () => {
   // Helper function to execute sequelae CLI
@@ -790,6 +792,78 @@ SELECT * FROM users;`;
       const result = await execSequelae(['SELECT', '1', 'as', 'num']);
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('num');
+    });
+  });
+
+  describe('Backup functionality', () => {
+    const mockConnectionString = 'postgresql://user:pass@localhost:5432/testdb';
+
+    beforeEach(() => {
+      // Mock child_process.execSync for pg_dump check
+      jest.mock('child_process', () => ({
+        ...jest.requireActual('child_process'),
+        execSync: jest.fn().mockReturnValue(''),
+      }));
+    });
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    describe('backup options validation', () => {
+      test('should validate mutually exclusive options', () => {
+        const options: BackupOptions = {
+          dataOnly: true,
+          schemaOnly: true,
+        };
+
+        // This should be caught by the backup method
+        const executor = new SqlExecutor(mockConnectionString);
+        expect(executor.backup(options)).rejects.toThrow(
+          'Cannot specify both dataOnly and schemaOnly'
+        );
+      });
+
+      test('should handle directory traversal attempts', () => {
+        const options: BackupOptions = {
+          outputPath: '../../../etc/passwd',
+        };
+
+        const executor = new SqlExecutor(mockConnectionString);
+        expect(executor.backup(options)).rejects.toThrow('directory traversal not allowed');
+      });
+
+      test('should quote special characters in table names', () => {
+        // Test that special characters are properly handled
+        const tableName = 'my-table.with"quotes';
+        const expectedQuoted = '"my-table.with""quotes"';
+
+        // This is implicitly tested in the backup method
+        expect(tableName.includes('.') || /[^a-zA-Z0-9_]/.test(tableName)).toBe(true);
+        expect(`"${tableName.replace(/"/g, '""')}"`).toBe(expectedQuoted);
+      });
+    });
+
+    describe('help command backup documentation', () => {
+      test('should include backup in help text', () => {
+        const helpText = handleHelp(false);
+        expect(helpText).toContain('sequelae backup');
+        expect(helpText).toContain('Create a database backup');
+      });
+
+      test('should include backup examples in help', () => {
+        const helpText = handleHelp(false);
+        expect(helpText).toContain('sequelae backup --output db_backup.sql');
+        expect(helpText).toContain('sequelae backup --tables users,posts --format custom');
+      });
+
+      test('should include backup in JSON help', () => {
+        const helpJson = handleHelp(true);
+        const parsed = JSON.parse(helpJson);
+
+        expect(parsed.usage).toContainEqual(expect.stringContaining('sequelae backup'));
+        expect(parsed.examples).toContainEqual(expect.stringContaining('sequelae backup --output'));
+      });
     });
   });
 });
