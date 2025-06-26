@@ -22,12 +22,12 @@
 
 ### Phase 3: MCP Tool Integration
 
-- [ ] Add `sql_backup` tool definition to `tool-definition.ts`
-- [ ] Define input schema with all backup options
-- [ ] Add backup case to tool handler in `tool-handler.ts`
-- [ ] Validate input parameters
-- [ ] Call SqlExecutor.backup() method
-- [ ] Format response for MCP protocol
+- [x] Add `sql_backup` tool definition to `tool-definition.ts`
+- [x] Define input schema with all backup options
+- [x] Add backup case to tool handler in `tool-handler.ts`
+- [x] Validate input parameters
+- [x] Call SqlExecutor.backup() method
+- [x] Format response for MCP protocol
 
 ### Phase 4: CLI Command Implementation
 

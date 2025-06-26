@@ -51,7 +51,11 @@ Don't stop until the process is totally finished.
 --X  
 Don't touch the codebase, except for the one file specified (if any).
 
---READY? --MIND --X then --WD about is this codebase 100% production ready ?
+--READY? --MIND --X then --WD about is this codebase 100% production ready ? 
+- Is the error handling on point
+- do we have good enough test coverage ?
+- are the tests actually useful, or are they just make belief to check some boxes ?
+- are tests pre commit executed ?
 
 ---
 

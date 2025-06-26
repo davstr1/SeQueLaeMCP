@@ -88,6 +88,55 @@ export const SQL_AGENT_TOOLS: McpToolDefinition[] = [
       },
     },
   },
+  {
+    name: 'sql_backup',
+    description: 'Create a backup of the PostgreSQL database using pg_dump',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        format: {
+          type: 'string',
+          description: 'Backup format: plain (SQL), custom, directory, or tar',
+          default: 'plain',
+        },
+        tables: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          description: 'Specific tables to backup (empty for all tables)',
+          default: [],
+        },
+        schemas: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          description: 'Specific schemas to backup (empty for all schemas)',
+          default: [],
+        },
+        dataOnly: {
+          type: 'boolean',
+          description: 'Backup only data, not schema',
+          default: false,
+        },
+        schemaOnly: {
+          type: 'boolean',
+          description: 'Backup only schema, not data',
+          default: false,
+        },
+        compress: {
+          type: 'boolean',
+          description: 'Enable compression (applies to custom format)',
+          default: false,
+        },
+        outputPath: {
+          type: 'string',
+          description: 'Path to save the backup file (defaults to timestamped filename)',
+        },
+      },
+    },
+  },
 ];
 
 /**

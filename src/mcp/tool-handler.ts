@@ -48,6 +48,8 @@ export class McpToolHandler {
           return this.handleSqlFile(request.arguments);
         case 'sql_schema':
           return this.handleSqlSchema(request.arguments);
+        case 'sql_backup':
+          return this.handleSqlBackup(request.arguments);
         default:
           return this.errorResponse(`Unknown tool: ${request.tool}`);
       }
@@ -273,6 +275,63 @@ export class McpToolHandler {
             },
           ],
         };
+      }
+    } catch (error) {
+      return this.errorResponse(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  private async handleSqlBackup(args: Record<string, unknown>): Promise<McpToolResponse> {
+    try {
+      if (!this.executor) {
+        throw new Error('SqlExecutor not initialized');
+      }
+
+      // Validate mutually exclusive options
+      if (args.dataOnly && args.schemaOnly) {
+        return this.errorResponse('Cannot specify both dataOnly and schemaOnly options');
+      }
+
+      // Validate format option
+      const validFormats = ['plain', 'custom', 'directory', 'tar'];
+      if (args.format && !validFormats.includes(args.format as string)) {
+        return this.errorResponse(`Invalid format. Must be one of: ${validFormats.join(', ')}`);
+      }
+
+      const result = await this.executor.backup({
+        format: args.format as 'plain' | 'custom' | 'directory' | 'tar' | undefined,
+        tables: args.tables as string[] | undefined,
+        schemas: args.schemas as string[] | undefined,
+        dataOnly: args.dataOnly as boolean | undefined,
+        schemaOnly: args.schemaOnly as boolean | undefined,
+        compress: args.compress as boolean | undefined,
+        outputPath: args.outputPath as string | undefined,
+      });
+
+      if (result.success) {
+        const sizeInfo = result.size ? ` (${(result.size / 1024 / 1024).toFixed(2)} MB)` : '';
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  success: true,
+                  message: `Backup completed successfully`,
+                  outputPath: result.outputPath,
+                  size: result.size,
+                  sizeFormatted: sizeInfo,
+                  duration: result.duration,
+                  durationFormatted: `${(result.duration / 1000).toFixed(2)}s`,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } else {
+        return this.errorResponse(result.error || 'Backup failed');
       }
     } catch (error) {
       return this.errorResponse(error instanceof Error ? error.message : String(error));
