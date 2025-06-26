@@ -45,7 +45,7 @@ jobs:
 
       - name: Run integration tests
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/test_db
         run: npm run test:integration
 
       - name: Upload coverage reports

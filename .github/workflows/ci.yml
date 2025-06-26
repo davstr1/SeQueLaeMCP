@@ -52,7 +52,7 @@ jobs:
 
       - name: Run tests with coverage
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          DATABASE_URL: postgresql://test:test@127.0.0.1:5432/test_db
           POSTGRES_SSL_MODE: disable
         run: npm test -- --coverage --coverageReporters=text --coverageReporters=lcov
 
