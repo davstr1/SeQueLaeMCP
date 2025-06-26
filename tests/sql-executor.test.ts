@@ -40,9 +40,12 @@ describe('SqlExecutor', () => {
 
   describe('constructor', () => {
     test('should create pool with correct configuration', () => {
+      const expectedSsl =
+        process.env.POSTGRES_SSL_MODE === 'disable' ? false : { rejectUnauthorized: true };
+
       expect(Pool).toHaveBeenCalledWith({
         connectionString: 'postgresql://test:test@localhost:5432/test',
-        ssl: { rejectUnauthorized: true },
+        ssl: expectedSsl,
         connectionTimeoutMillis: 30000,
         idleTimeoutMillis: 10000,
         max: 10,
