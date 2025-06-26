@@ -95,6 +95,34 @@ AI assistants like Claude are supposed to build entire apps, but they can't dire
 
 ---
 
+## ⚡ Performance
+
+### Query Latency
+| Query Type | Expected Latency | Notes |
+|------------|-----------------|--------|
+| Simple SELECT | 5-15ms | Connection pooling minimizes overhead |
+| Schema queries | 10-30ms | Depends on table count |
+| Complex queries | 20-100ms | Limited by PostgreSQL performance |
+
+### Key Features
+- **Connection pooling**: Persistent connections reduce overhead from ~50ms to <1ms
+- **Query timeout**: Default 120s, configurable per-query
+- **Rate limiting**: Token bucket algorithm with <1ms overhead (MCP mode)
+- **Memory efficient**: 30-50MB base + 1-2MB per connection
+
+### Performance Tuning
+```bash
+# High concurrency setup
+export POSTGRES_MAX_CONNECTIONS=20
+export QUERY_TIMEOUT=30000
+
+# MCP rate limiting
+export MCP_RATE_LIMIT_MAX_REQUESTS=1000
+export MCP_RATE_LIMIT_WINDOW_MS=60000
+```
+
+---
+
 ## ⚙️ Installation & Setup
 
 ### 1. Install
@@ -290,6 +318,27 @@ export QUERY_TIMEOUT=300000
    export LOG_LEVEL=debug
    npx sequelae exec "SELECT * FROM users"
    ```
+
+### Advanced Configuration Example
+
+```bash
+# Production setup with SSL, pooling, and rate limiting
+cat > .env << EOF
+DATABASE_URL=postgresql://user:pass@prod.db.com:5432/myapp
+POSTGRES_SSL_MODE=verify-full
+POSTGRES_MAX_CONNECTIONS=25
+POSTGRES_IDLE_TIMEOUT=30000
+POSTGRES_CONNECTION_TIMEOUT=10000
+QUERY_TIMEOUT=60000
+MCP_RATE_LIMIT_MAX_REQUESTS=500
+MCP_RATE_LIMIT_WINDOW_MS=60000
+MCP_RATE_LIMIT_TOOLS='{
+  "sql_exec": {"maxRequests": 100, "windowMs": 60000},
+  "sql_backup": {"maxRequests": 5, "windowMs": 3600000}
+}'
+LOG_LEVEL=info
+EOF
+```
 
 ---
 
