@@ -62,6 +62,12 @@ export class McpToolHandler {
     const query = args.query as string;
     const jsonMode = args.json !== false; // Default true
     const useTransaction = args.transaction !== false; // Default true
+    const timeout = args.timeout as number | undefined;
+
+    // Set timeout environment variable if provided
+    if (timeout) {
+      process.env.POSTGRES_STATEMENT_TIMEOUT = timeout.toString();
+    }
 
     try {
       if (!this.executor) {
@@ -143,6 +149,12 @@ export class McpToolHandler {
     const filepath = args.filepath as string;
     const jsonMode = args.json !== false; // Default true
     const useTransaction = args.transaction !== false; // Default true
+    const timeout = args.timeout as number | undefined;
+
+    // Set timeout environment variable if provided
+    if (timeout) {
+      process.env.POSTGRES_STATEMENT_TIMEOUT = timeout.toString();
+    }
 
     try {
       if (!this.executor) {

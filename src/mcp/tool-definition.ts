@@ -43,6 +43,11 @@ export const SQL_AGENT_TOOLS: McpToolDefinition[] = [
           description: 'Wrap query in a transaction (auto-commit on success, rollback on error)',
           default: true,
         },
+        timeout: {
+          type: 'number',
+          description: 'Query timeout in milliseconds',
+          default: 120000,
+        },
       },
       required: ['query'],
     },
@@ -67,6 +72,11 @@ export const SQL_AGENT_TOOLS: McpToolDefinition[] = [
           description:
             'Wrap file execution in a transaction (auto-commit on success, rollback on error)',
           default: true,
+        },
+        timeout: {
+          type: 'number',
+          description: 'Query timeout in milliseconds',
+          default: 120000,
         },
       },
       required: ['filepath'],

@@ -66,9 +66,30 @@ export class SqlExecutor {
       }
     }
 
+    // Configure connection timeout from environment or use default
+    const connectionTimeoutMillis = process.env.POSTGRES_CONNECTION_TIMEOUT
+      ? parseInt(process.env.POSTGRES_CONNECTION_TIMEOUT)
+      : 30000; // 30 seconds default
+
+    const idleTimeoutMillis = process.env.POSTGRES_IDLE_TIMEOUT
+      ? parseInt(process.env.POSTGRES_IDLE_TIMEOUT)
+      : 10000; // 10 seconds default
+
+    const max = process.env.POSTGRES_MAX_CONNECTIONS
+      ? parseInt(process.env.POSTGRES_MAX_CONNECTIONS)
+      : 10; // 10 connections default
+
+    const statementTimeout = process.env.POSTGRES_STATEMENT_TIMEOUT
+      ? parseInt(process.env.POSTGRES_STATEMENT_TIMEOUT)
+      : 120000; // 2 minutes default
+
     this.pool = new Pool({
       connectionString,
       ssl: sslConfig,
+      connectionTimeoutMillis,
+      idleTimeoutMillis,
+      max,
+      statement_timeout: statementTimeout,
     });
   }
 

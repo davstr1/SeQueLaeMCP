@@ -69,6 +69,7 @@ Usage:
   sequelae exit                     Exit sequelae
   sequelae --json                   Output results in JSON format
   sequelae --no-transaction         Disable automatic transactions
+  sequelae --timeout <ms>           Set query timeout in milliseconds
   
 Examples:
   sequelae exec "SELECT * FROM users"
@@ -107,6 +108,7 @@ export interface ParsedArguments {
   jsonMode: boolean;
   allSchemas: boolean;
   noTransaction: boolean;
+  timeout?: number;
   filteredArgs: string[];
 }
 
@@ -114,14 +116,44 @@ export function parseArguments(args: string[]): ParsedArguments {
   const jsonMode = args.includes('--json');
   const allSchemas = args.includes('--all');
   const noTransaction = args.includes('--no-transaction');
-  const filteredArgs = args.filter(
-    arg => arg !== '--json' && arg !== '--all' && arg !== '--no-transaction'
-  );
+
+  // Extract timeout value
+  let timeout: number | undefined;
+  let timeoutValueIndex: number | undefined;
+  const timeoutIndex = args.indexOf('--timeout');
+  if (timeoutIndex !== -1 && timeoutIndex + 1 < args.length) {
+    const possibleValue = args[timeoutIndex + 1];
+    // Only treat as timeout value if it's a valid number and not another flag/command
+    if (!possibleValue.startsWith('-')) {
+      const timeoutValue = parseInt(possibleValue);
+      if (!isNaN(timeoutValue) && timeoutValue > 0) {
+        timeout = timeoutValue;
+      }
+      // Always mark the next value for removal if it doesn't start with '-'
+      timeoutValueIndex = timeoutIndex + 1;
+    }
+  }
+
+  const filteredArgs = args.filter((arg, index) => {
+    // Remove flags
+    if (arg === '--json' || arg === '--all' || arg === '--no-transaction') {
+      return false;
+    }
+    // Remove --timeout and its value
+    if (arg === '--timeout') {
+      return false;
+    }
+    if (timeoutValueIndex !== undefined && index === timeoutValueIndex) {
+      return false;
+    }
+    return true;
+  });
 
   return {
     jsonMode,
     allSchemas,
     noTransaction,
+    timeout,
     filteredArgs,
   };
 }
@@ -305,7 +337,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
   // Parse arguments
-  const { jsonMode, allSchemas, noTransaction, filteredArgs } = parseArguments(args);
+  const { jsonMode, allSchemas, noTransaction, timeout, filteredArgs } = parseArguments(args);
 
   // Skip header when running in Jest or JSON mode
   if (typeof jest === 'undefined' && !jsonMode) {
@@ -346,6 +378,11 @@ async function main(): Promise<void> {
   }
 
   const databaseUrl = process.env.DATABASE_URL;
+
+  // Set timeout environment variable if provided
+  if (timeout) {
+    process.env.POSTGRES_STATEMENT_TIMEOUT = timeout.toString();
+  }
 
   const dbError = validateDatabaseUrl(databaseUrl, jsonMode);
   if (dbError) {

@@ -159,6 +159,7 @@ describe('Sequelae Unit Tests', () => {
           jsonMode: false,
           allSchemas: false,
           noTransaction: false,
+          timeout: undefined,
           filteredArgs: [],
         });
       });
@@ -169,6 +170,7 @@ describe('Sequelae Unit Tests', () => {
           jsonMode: true,
           allSchemas: false,
           noTransaction: false,
+          timeout: undefined,
           filteredArgs: ['exec', 'SELECT 1'],
         });
       });
@@ -179,6 +181,7 @@ describe('Sequelae Unit Tests', () => {
           jsonMode: false,
           allSchemas: true,
           noTransaction: false,
+          timeout: undefined,
           filteredArgs: ['schema'],
         });
       });
@@ -189,6 +192,7 @@ describe('Sequelae Unit Tests', () => {
           jsonMode: true,
           allSchemas: true,
           noTransaction: false,
+          timeout: undefined,
           filteredArgs: ['schema'],
         });
       });
@@ -199,6 +203,7 @@ describe('Sequelae Unit Tests', () => {
           jsonMode: true,
           allSchemas: true,
           noTransaction: false,
+          timeout: undefined,
           filteredArgs: ['--help'],
         });
       });
@@ -209,6 +214,40 @@ describe('Sequelae Unit Tests', () => {
           jsonMode: false,
           allSchemas: false,
           noTransaction: true,
+          timeout: undefined,
+          filteredArgs: ['exec', 'SELECT 1'],
+        });
+      });
+
+      test('should parse --timeout flag with value', () => {
+        const result = parseArguments(['--timeout', '5000', 'exec', 'SELECT 1']);
+        expect(result).toEqual({
+          jsonMode: false,
+          allSchemas: false,
+          noTransaction: false,
+          timeout: 5000,
+          filteredArgs: ['exec', 'SELECT 1'],
+        });
+      });
+
+      test('should ignore --timeout without value', () => {
+        const result = parseArguments(['--timeout', 'exec', 'SELECT 1']);
+        expect(result).toEqual({
+          jsonMode: false,
+          allSchemas: false,
+          noTransaction: false,
+          timeout: undefined,
+          filteredArgs: ['SELECT 1'], // 'exec' is consumed as invalid timeout value
+        });
+      });
+
+      test('should ignore invalid --timeout value', () => {
+        const result = parseArguments(['--timeout', 'invalid', 'exec', 'SELECT 1']);
+        expect(result).toEqual({
+          jsonMode: false,
+          allSchemas: false,
+          noTransaction: false,
+          timeout: undefined,
           filteredArgs: ['exec', 'SELECT 1'],
         });
       });

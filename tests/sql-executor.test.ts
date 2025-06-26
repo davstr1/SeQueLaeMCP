@@ -45,6 +45,10 @@ describe('SqlExecutor', () => {
       expect(Pool).toHaveBeenCalledWith({
         connectionString: 'postgresql://test:test@localhost:5432/test',
         ssl: { rejectUnauthorized: true },
+        connectionTimeoutMillis: 30000,
+        idleTimeoutMillis: 10000,
+        max: 10,
+        statement_timeout: 120000,
       });
     });
   });
