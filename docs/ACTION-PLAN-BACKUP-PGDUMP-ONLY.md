@@ -41,13 +41,13 @@
 
 ### Phase 5: Error Handling & Validation
 
-- [ ] Check if pg_dump is available in PATH
-- [ ] Validate output path is writable
-- [ ] Handle special characters in database/table names
-- [ ] Prevent directory traversal in output paths
-- [ ] Add proper error messages for common failures
-- [ ] Handle connection failures gracefully
-- [ ] Validate mutually exclusive options (data-only vs schema-only)
+- [x] Check if pg_dump is available in PATH
+- [x] Validate output path is writable
+- [x] Handle special characters in database/table names
+- [x] Prevent directory traversal in output paths
+- [x] Add proper error messages for common failures
+- [x] Handle connection failures gracefully
+- [x] Validate mutually exclusive options (data-only vs schema-only)
 
 ### Phase 6: Advanced Features
 

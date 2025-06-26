@@ -1,6 +1,6 @@
 import { Pool, QueryResult as PgQueryResult } from 'pg';
-import { readFileSync, existsSync, statSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync, existsSync, statSync, accessSync, constants } from 'fs';
+import { resolve, dirname, isAbsolute, normalize } from 'path';
 import { spawn } from 'child_process';
 import { BackupOptions, BackupResult } from '../types/backup';
 
@@ -282,6 +282,25 @@ export class SqlExecutor {
     const start = Date.now();
 
     try {
+      // Check if pg_dump is available
+      const { execSync } = await import('child_process');
+      try {
+        execSync('which pg_dump', { stdio: 'ignore' });
+      } catch (_error) {
+        throw new Error(
+          'pg_dump not found. Please ensure PostgreSQL client tools are installed.\n' +
+            'Install with:\n' +
+            '  - macOS: brew install postgresql\n' +
+            '  - Ubuntu/Debian: apt-get install postgresql-client\n' +
+            '  - RHEL/CentOS: yum install postgresql'
+        );
+      }
+
+      // Validate mutually exclusive options
+      if (options.dataOnly && options.schemaOnly) {
+        throw new Error('Cannot specify both dataOnly and schemaOnly options');
+      }
+
       // Parse connection string
       const url = new URL(this.connectionString);
 
@@ -303,17 +322,26 @@ export class SqlExecutor {
         args.push('-F', options.format.charAt(0));
       }
 
-      // Add table selections
+      // Add table selections with proper quoting
       if (options.tables?.length) {
         options.tables.forEach(table => {
-          args.push('-t', table);
+          // Quote table names that contain special characters
+          const quotedTable =
+            table.includes('.') || /[^a-zA-Z0-9_]/.test(table)
+              ? `"${table.replace(/"/g, '""')}"`
+              : table;
+          args.push('-t', quotedTable);
         });
       }
 
-      // Add schema selections
+      // Add schema selections with proper quoting
       if (options.schemas?.length) {
         options.schemas.forEach(schema => {
-          args.push('-n', schema);
+          // Quote schema names that contain special characters
+          const quotedSchema = /[^a-zA-Z0-9_]/.test(schema)
+            ? `"${schema.replace(/"/g, '""')}"`
+            : schema;
+          args.push('-n', quotedSchema);
         });
       }
 
@@ -326,7 +354,7 @@ export class SqlExecutor {
         args.push('-Z', '6');
       }
 
-      // Output file
+      // Output file validation and sanitization
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       const defaultExt =
         options.format === 'custom'
@@ -336,7 +364,26 @@ export class SqlExecutor {
             : options.format === 'directory'
               ? ''
               : 'sql';
-      const outputPath = options.outputPath || `backup_${timestamp}.${defaultExt}`;
+      let outputPath = options.outputPath || `backup_${timestamp}.${defaultExt}`;
+
+      // Prevent directory traversal attacks
+      outputPath = normalize(outputPath);
+      if (outputPath.includes('..')) {
+        throw new Error('Invalid output path: directory traversal not allowed');
+      }
+
+      // Make path absolute if not already
+      if (!isAbsolute(outputPath)) {
+        outputPath = resolve(process.cwd(), outputPath);
+      }
+
+      // Check if directory is writable
+      const outputDir = dirname(outputPath);
+      try {
+        accessSync(outputDir, constants.W_OK);
+      } catch (_error) {
+        throw new Error(`Output directory not writable: ${outputDir}`);
+      }
 
       if (options.format !== 'directory') {
         args.push('-f', outputPath);
