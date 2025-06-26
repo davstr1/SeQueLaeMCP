@@ -21,7 +21,7 @@ describe('Sequelae E2E Tests', () => {
   beforeAll(async () => {
     pool = new Pool({
       connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      ssl: process.env.POSTGRES_SSL_MODE === 'disable' ? false : { rejectUnauthorized: false },
       // Add connection timeout and idle timeout
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 10000,
