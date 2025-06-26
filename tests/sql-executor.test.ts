@@ -2,21 +2,26 @@ import { SqlExecutor } from '../src/core/sql-executor';
 import { Pool } from 'pg';
 import * as fs from 'fs';
 
+// Create mocks that can be accessed in tests
+const mockClient = {
+  query: jest.fn(),
+  release: jest.fn(),
+};
+
+const mockPool = {
+  query: jest.fn(),
+  end: jest.fn(),
+  connect: jest.fn(() => Promise.resolve(mockClient)),
+  on: jest.fn(), // Added for PoolManager
+  totalCount: 0,
+  idleCount: 0,
+  waitingCount: 0,
+};
+
 // Mock pg module
-jest.mock('pg', () => {
-  const mockClient = {
-    query: jest.fn(),
-    release: jest.fn(),
-  };
-  const mockPool = {
-    query: jest.fn(),
-    end: jest.fn(),
-    connect: jest.fn(() => Promise.resolve(mockClient)),
-  };
-  return {
-    Pool: jest.fn(() => mockPool),
-  };
-});
+jest.mock('pg', () => ({
+  Pool: jest.fn(() => mockPool),
+}));
 
 // Mock fs module
 jest.mock('fs', () => ({
@@ -26,17 +31,10 @@ jest.mock('fs', () => ({
 
 describe('SqlExecutor', () => {
   let executor: SqlExecutor;
-  let mockPool: any;
-  let mockClient: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
     executor = new SqlExecutor('postgresql://test:test@localhost:5432/test');
-    mockPool = (Pool as jest.MockedClass<typeof Pool>).mock.results[0].value;
-    mockClient = {
-      query: jest.fn(),
-      release: jest.fn(),
-    };
     mockPool.connect.mockResolvedValue(mockClient);
   });
 
@@ -265,7 +263,8 @@ describe('SqlExecutor', () => {
   describe('close', () => {
     test('should close the pool', async () => {
       await executor.close();
-      expect(mockPool.end).toHaveBeenCalled();
+      // close() no longer closes the pool - it's managed by PoolManager
+      expect(mockPool.end).not.toHaveBeenCalled();
     });
   });
 });

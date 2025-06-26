@@ -975,6 +975,7 @@ describe('PoolManager', () => {
           .mockRejectedValueOnce(new Error('Connection failed'))
           .mockResolvedValueOnce({ release: jest.fn() }),
         on: jest.fn(),
+        end: jest.fn(),
         totalCount: 0,
         idleCount: 0,
         waitingCount: 0,
@@ -997,6 +998,7 @@ describe('PoolManager', () => {
       const mockPool = {
         connect: jest.fn().mockRejectedValue(new Error('Connection failed')),
         on: jest.fn(),
+        end: jest.fn(),
       };
 
       poolManager.initialize({

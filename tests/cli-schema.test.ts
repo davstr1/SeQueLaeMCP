@@ -9,6 +9,10 @@ jest.mock('../src/core/sql-executor');
 const mockPool = {
   connect: jest.fn(),
   end: jest.fn(),
+  on: jest.fn(),
+  totalCount: 0,
+  idleCount: 0,
+  waitingCount: 0,
 };
 
 const mockExecutor = {
@@ -81,10 +85,7 @@ describe('CLI Schema Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(mockExecutor.getSchema).toHaveBeenCalledWith({
-        tables: undefined,
-        includeSystemTables: false,
-      });
+      expect(mockExecutor.getSchema).toHaveBeenCalledWith(undefined, false);
 
       // Should display both tables
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Table: users'));
@@ -113,10 +114,7 @@ describe('CLI Schema Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(mockExecutor.getSchema).toHaveBeenCalledWith({
-        tables: ['users', 'posts'],
-        includeSystemTables: false,
-      });
+      expect(mockExecutor.getSchema).toHaveBeenCalledWith(['users', 'posts'], false);
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Table: users'));
       expect(process.exit).toHaveBeenCalledWith(0);
     });
@@ -161,10 +159,7 @@ describe('CLI Schema Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(mockExecutor.getSchema).toHaveBeenCalledWith({
-        tables: undefined,
-        includeSystemTables: true,
-      });
+      expect(mockExecutor.getSchema).toHaveBeenCalledWith(undefined, true);
       expect(process.exit).toHaveBeenCalledWith(0);
     });
 
@@ -207,10 +202,7 @@ describe('CLI Schema Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(mockExecutor.getSchema).toHaveBeenCalledWith({
-        tables: ['users', 'posts', 'comments'],
-        includeSystemTables: false,
-      });
+      expect(mockExecutor.getSchema).toHaveBeenCalledWith(['users', 'posts', 'comments'], false);
       expect(process.exit).toHaveBeenCalledWith(0);
     });
   });

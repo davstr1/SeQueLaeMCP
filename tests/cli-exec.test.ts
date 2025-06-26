@@ -9,6 +9,10 @@ jest.mock('../src/core/sql-executor');
 const mockPool = {
   connect: jest.fn(),
   end: jest.fn(),
+  on: jest.fn(),
+  totalCount: 0,
+  idleCount: 0,
+  waitingCount: 0,
 };
 
 const mockExecutor = {
@@ -73,7 +77,11 @@ describe('CLI Exec Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(mockExecutor.executeQuery).toHaveBeenCalledWith('SELECT * FROM users', true);
+      expect(mockExecutor.executeQuery).toHaveBeenCalledWith(
+        'SELECT * FROM users',
+        true,
+        undefined
+      );
       expect(console.table).toHaveBeenCalledWith(mockResult.rows);
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('2 rows'));
       expect(process.exit).toHaveBeenCalledWith(0);
@@ -95,8 +103,19 @@ describe('CLI Exec Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(mockExecutor.executeQuery).toHaveBeenCalledWith('SELECT COUNT(*) FROM users', true);
-      expect(console.log).toHaveBeenCalledWith(JSON.stringify(mockResult));
+      expect(mockExecutor.executeQuery).toHaveBeenCalledWith(
+        'SELECT COUNT(*) FROM users',
+        true,
+        undefined
+      );
+      const expectedResult = {
+        success: true,
+        command: 'SELECT',
+        rowCount: 1,
+        rows: [{ count: '42' }],
+        duration: 25,
+      };
+      expect(console.log).toHaveBeenCalledWith(JSON.stringify(expectedResult));
       expect(process.exit).toHaveBeenCalledWith(0);
     });
 
@@ -135,7 +154,7 @@ describe('CLI Exec Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('0 rows'));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('SELECT  - 30ms'));
       expect(process.exit).toHaveBeenCalledWith(0);
     });
 
@@ -155,7 +174,7 @@ describe('CLI Exec Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('INSERT 1'));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('INSERT (1 rows) - 40ms'));
       expect(process.exit).toHaveBeenCalledWith(0);
     });
 
@@ -175,7 +194,7 @@ describe('CLI Exec Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(mockExecutor.executeQuery).toHaveBeenCalledWith('SELECT * FROM users', true);
+      expect(mockExecutor.executeQuery).toHaveBeenCalledWith('SELECT * FROM users', true, 5000);
       expect(process.exit).toHaveBeenCalledWith(0);
     });
 
@@ -195,7 +214,11 @@ describe('CLI Exec Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(mockExecutor.executeQuery).toHaveBeenCalledWith('CREATE TABLE test (id int)', false);
+      expect(mockExecutor.executeQuery).toHaveBeenCalledWith(
+        'CREATE TABLE test (id int)',
+        false,
+        undefined
+      );
       expect(process.exit).toHaveBeenCalledWith(0);
     });
 
@@ -204,7 +227,7 @@ describe('CLI Exec Command', () => {
       const { main } = require('../src/cli');
       await main();
 
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('SQL query is required'));
+      expect(console.error).toHaveBeenCalledWith('Error: No SQL query provided');
       expect(process.exit).toHaveBeenCalledWith(1);
     });
 
