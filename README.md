@@ -61,6 +61,17 @@ npx sequelae --mcp
 }
 ```
 
+#### `sql_health` - Check database health
+```json
+{
+  "name": "sql_health",
+  "arguments": {
+    "includeVersion": true,      // Include database version info
+    "includeConnectionInfo": true // Include connection pool stats
+  }
+}
+```
+
 ### Example MCP Session
 ```json
 // Request

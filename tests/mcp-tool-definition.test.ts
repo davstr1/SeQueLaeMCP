@@ -3,13 +3,14 @@ import { SQL_AGENT_TOOLS, getToolDefinition, validateToolInput } from '../src/mc
 describe('MCP Tool Definition', () => {
   describe('SQL_AGENT_TOOLS', () => {
     test('should define all required tools', () => {
-      expect(SQL_AGENT_TOOLS).toHaveLength(4);
+      expect(SQL_AGENT_TOOLS).toHaveLength(5);
 
       const toolNames = SQL_AGENT_TOOLS.map(t => t.name);
       expect(toolNames).toContain('sql_exec');
       expect(toolNames).toContain('sql_file');
       expect(toolNames).toContain('sql_schema');
       expect(toolNames).toContain('sql_backup');
+      expect(toolNames).toContain('sql_health');
     });
 
     test('each tool should have required properties', () => {
@@ -45,6 +46,15 @@ describe('MCP Tool Definition', () => {
       expect(sqlSchema!.inputSchema.properties).toHaveProperty('allSchemas');
       expect(sqlSchema!.inputSchema.properties).toHaveProperty('json');
       expect(sqlSchema!.inputSchema.required).toBeUndefined();
+    });
+
+    test('sql_health tool should have correct schema', () => {
+      const sqlHealth = SQL_AGENT_TOOLS.find(t => t.name === 'sql_health');
+      expect(sqlHealth).toBeDefined();
+      expect(sqlHealth!.inputSchema.properties).toHaveProperty('includeVersion');
+      expect(sqlHealth!.inputSchema.properties).toHaveProperty('includeConnectionInfo');
+      expect(sqlHealth!.inputSchema.properties).toHaveProperty('json');
+      expect(sqlHealth!.inputSchema.required).toBeUndefined();
     });
   });
 
@@ -113,6 +123,27 @@ describe('MCP Tool Definition', () => {
 
     test('should validate sql_schema with no parameters', () => {
       const result = validateToolInput('sql_schema', {});
+      expect(result.valid).toBe(true);
+    });
+
+    test('should validate valid sql_health input', () => {
+      const result = validateToolInput('sql_health', {
+        includeVersion: true,
+        includeConnectionInfo: true,
+        json: true,
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    test('should validate sql_health with no parameters', () => {
+      const result = validateToolInput('sql_health', {});
+      expect(result.valid).toBe(true);
+    });
+
+    test('should validate sql_health with partial parameters', () => {
+      const result = validateToolInput('sql_health', {
+        includeVersion: false,
+      });
       expect(result.valid).toBe(true);
     });
 

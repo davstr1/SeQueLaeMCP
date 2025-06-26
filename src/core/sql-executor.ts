@@ -48,6 +48,11 @@ export class SqlExecutor {
   private poolManager: PoolManager;
   private connectionString: string;
 
+  // Getter for poolManager to allow health checks
+  get poolManagerInstance(): PoolManager {
+    return this.poolManager;
+  }
+
   constructor(connectionString: string) {
     this.connectionString = connectionString;
     this.poolManager = PoolManager.getInstance();

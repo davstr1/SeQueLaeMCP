@@ -158,6 +158,30 @@ export const SQL_AGENT_TOOLS: McpToolDefinition[] = [
       },
     },
   },
+  {
+    name: 'sql_health',
+    description: 'Check database connection health and get system information',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        includeVersion: {
+          type: 'boolean',
+          description: 'Include database version information',
+          default: true,
+        },
+        includeConnectionInfo: {
+          type: 'boolean',
+          description: 'Include connection pool statistics',
+          default: true,
+        },
+        json: {
+          type: 'boolean',
+          description: 'Return results in JSON format',
+          default: true,
+        },
+      },
+    },
+  },
 ];
 
 /**

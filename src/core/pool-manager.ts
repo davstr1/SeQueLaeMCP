@@ -100,6 +100,28 @@ export class PoolManager {
   }
 
   /**
+   * Get pool status information
+   */
+  getStatus(): {
+    initialized: boolean;
+    total: number;
+    idle: number;
+    waiting: number;
+    maxConnections: number;
+    idleTimeout: number;
+    connectionTimeout: number;
+  } {
+    const stats = this.getStats();
+    return {
+      initialized: this.isInitialized(),
+      ...stats,
+      maxConnections: this.config?.maxConnections || 10,
+      idleTimeout: this.config?.idleTimeoutMillis || 10000,
+      connectionTimeout: this.config?.connectionTimeoutMillis || 0,
+    };
+  }
+
+  /**
    * Close the pool and cleanup
    */
   async close(): Promise<void> {

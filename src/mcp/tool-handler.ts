@@ -1,5 +1,6 @@
 import { SqlExecutor } from '../core/sql-executor';
 import { validateToolInput } from './tool-definition';
+import * as packageJson from '../../package.json';
 
 export interface McpToolRequest {
   tool: string;
@@ -50,6 +51,8 @@ export class McpToolHandler {
           return this.handleSqlSchema(request.arguments);
         case 'sql_backup':
           return this.handleSqlBackup(request.arguments);
+        case 'sql_health':
+          return this.handleSqlHealth(request.arguments);
         default:
           return this.errorResponse(`Unknown tool: ${request.tool}`);
       }
@@ -346,6 +349,134 @@ export class McpToolHandler {
         };
       } else {
         return this.errorResponse(result.error || 'Backup failed');
+      }
+    } catch (error) {
+      return this.errorResponse(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  private async handleSqlHealth(args: Record<string, unknown>): Promise<McpToolResponse> {
+    const includeVersion = args.includeVersion !== false; // Default true
+    const includeConnectionInfo = args.includeConnectionInfo !== false; // Default true
+    const jsonMode = args.json !== false; // Default true
+
+    try {
+      if (!this.executor) {
+        throw new Error('SqlExecutor not initialized');
+      }
+
+      const healthInfo: any = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+      };
+
+      // Test database connection
+      try {
+        const testResult = await this.executor.executeQuery('SELECT 1 as test', false);
+        healthInfo.connectionTest = {
+          success: true,
+          latency: testResult.duration,
+        };
+      } catch (error) {
+        healthInfo.status = 'unhealthy';
+        healthInfo.connectionTest = {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+
+      // Get database version if requested
+      if (includeVersion && healthInfo.status === 'healthy') {
+        try {
+          const versionResult = await this.executor.executeQuery('SELECT version()', false);
+          if (versionResult.rows && versionResult.rows.length > 0) {
+            healthInfo.database = {
+              version: versionResult.rows[0].version,
+            };
+          }
+        } catch (error) {
+          healthInfo.database = {
+            error: error instanceof Error ? error.message : 'Failed to get version',
+          };
+        }
+      }
+
+      // Get connection pool info if requested
+      if (includeConnectionInfo) {
+        const poolManager = (this.executor as any).poolManagerInstance;
+        if (poolManager && poolManager.getStatus) {
+          healthInfo.connectionPool = poolManager.getStatus();
+        } else {
+          healthInfo.connectionPool = {
+            note: 'Pool statistics not available',
+          };
+        }
+      }
+
+      // Add tool information
+      healthInfo.tool = {
+        name: 'sequelae-mcp',
+        version: packageJson.version,
+      };
+
+      if (jsonMode) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(healthInfo, null, 2),
+            },
+          ],
+        };
+      } else {
+        // Format as readable text
+        let text = `Health Check Report\n`;
+        text += `==================\n\n`;
+        text += `Status: ${healthInfo.status.toUpperCase()}\n`;
+        text += `Timestamp: ${healthInfo.timestamp}\n\n`;
+
+        text += `Connection Test:\n`;
+        text += `  Success: ${healthInfo.connectionTest.success}\n`;
+        if (healthInfo.connectionTest.latency) {
+          text += `  Latency: ${healthInfo.connectionTest.latency}ms\n`;
+        }
+        if (healthInfo.connectionTest.error) {
+          text += `  Error: ${healthInfo.connectionTest.error}\n`;
+        }
+
+        if (healthInfo.database) {
+          text += `\nDatabase:\n`;
+          if (healthInfo.database.version) {
+            text += `  Version: ${healthInfo.database.version}\n`;
+          }
+          if (healthInfo.database.error) {
+            text += `  Error: ${healthInfo.database.error}\n`;
+          }
+        }
+
+        if (healthInfo.connectionPool) {
+          text += `\nConnection Pool:\n`;
+          if (healthInfo.connectionPool.note) {
+            text += `  ${healthInfo.connectionPool.note}\n`;
+          } else {
+            text += `  Total: ${healthInfo.connectionPool.total || 'N/A'}\n`;
+            text += `  Idle: ${healthInfo.connectionPool.idle || 'N/A'}\n`;
+            text += `  Waiting: ${healthInfo.connectionPool.waiting || 'N/A'}\n`;
+          }
+        }
+
+        text += `\nTool:\n`;
+        text += `  Name: ${healthInfo.tool.name}\n`;
+        text += `  Version: ${healthInfo.tool.version}\n`;
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text,
+            },
+          ],
+        };
       }
     } catch (error) {
       return this.errorResponse(error instanceof Error ? error.message : String(error));
