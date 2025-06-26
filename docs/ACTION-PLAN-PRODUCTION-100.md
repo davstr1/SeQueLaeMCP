@@ -4,12 +4,12 @@
 
 ### Phase 1: Fix Husky Deprecation Warning
 
-- [ ] Open `.husky/pre-commit` file
-- [ ] Remove the deprecated lines:
+- [x] Open `.husky/pre-commit` file
+- [x] Remove the deprecated lines:
   - `#!/usr/bin/env sh`
   - `. "$(dirname -- "$0")/_/husky.sh"`
-- [ ] Test that pre-commit hooks still work
-- [ ] Commit the fix
+- [x] Test that pre-commit hooks still work
+- [x] Commit the fix
 
 ### Phase 2: Add SSL Configuration
 
@@ -50,7 +50,7 @@
 - [ ] Add progress indicator for backup operations
 - [ ] Consider adding backup size estimation (optional)
 
-### Phase 6: Optional Performance Improvements
+### Phase 6: Optional Performance Improvements. SKip for now.
 
 - [ ] Research connection pooling implementation
   - [ ] Evaluate if needed for the use case
