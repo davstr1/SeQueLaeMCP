@@ -1,15 +1,15 @@
 # MCP Mode
 
-sql-agent-cli supports the Model Context Protocol (MCP), allowing AI assistants to execute SQL directly.
+sequelae-mcp supports the Model Context Protocol (MCP), allowing AI assistants to execute SQL directly.
 
 ## Quick Start
 
 ```bash
 # Start MCP server
-npx sql-agent --mcp
+npx sequelae --mcp
 
 # Or use environment variable
-MCP_MODE=true npx sql-agent
+MCP_MODE=true npx sequelae
 ```
 
 ## Available Tools
