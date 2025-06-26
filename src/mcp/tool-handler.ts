@@ -73,7 +73,7 @@ export class McpToolHandler {
       if (!this.executor) {
         throw new Error('SqlExecutor not initialized');
       }
-      const result = await this.executor.executeQuery(query, useTransaction);
+      const result = await this.executor.executeQuery(query, useTransaction, timeout);
 
       if (jsonMode) {
         return {
@@ -160,7 +160,7 @@ export class McpToolHandler {
       if (!this.executor) {
         throw new Error('SqlExecutor not initialized');
       }
-      const result = await this.executor.executeFile(filepath, useTransaction);
+      const result = await this.executor.executeFile(filepath, useTransaction, timeout);
 
       if (jsonMode) {
         return {

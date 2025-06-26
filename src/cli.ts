@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Pool } from 'pg';
+import { PoolManager } from './core/pool-manager';
 import { config } from 'dotenv';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
@@ -309,6 +310,14 @@ async function cleanupPool(pool: Pool): Promise<void> {
   } catch (error) {
     console.error('Error closing database pool:', error);
   }
+}
+
+// Cleanup function for shared pool
+// Currently not used as the pool is shared across all SqlExecutor instances
+// and will be cleaned up when the process exits
+async function _cleanupSharedPool(): Promise<void> {
+  const poolManager = PoolManager.getInstance();
+  await poolManager.close();
 }
 
 export function buildTableList(tables: string): string[] {
@@ -729,9 +738,9 @@ async function main(): Promise<void> {
 
     try {
       if (filteredArgs[0] === 'file') {
-        result = await executor.executeFile(filteredArgs[1], !noTransaction);
+        result = await executor.executeFile(filteredArgs[1], !noTransaction, timeout);
       } else {
-        result = await executor.executeQuery(sql, !noTransaction);
+        result = await executor.executeQuery(sql, !noTransaction, timeout);
       }
     } finally {
       await executor.close();

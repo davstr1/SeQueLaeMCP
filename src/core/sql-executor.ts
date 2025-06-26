@@ -1,4 +1,5 @@
-import { Pool, QueryResult as PgQueryResult } from 'pg';
+import { QueryResult as PgQueryResult } from 'pg';
+import { PoolManager } from './pool-manager';
 import { readFileSync, existsSync, statSync, accessSync, constants } from 'fs';
 import { resolve, dirname, isAbsolute, normalize } from 'path';
 import { spawn } from 'child_process';
@@ -43,11 +44,12 @@ export interface MissingTableInfo {
 }
 
 export class SqlExecutor {
-  private pool: Pool;
+  private poolManager: PoolManager;
   private connectionString: string;
 
   constructor(connectionString: string) {
     this.connectionString = connectionString;
+    this.poolManager = PoolManager.getInstance();
 
     // Configure SSL based on environment variables
     const sslMode = process.env.POSTGRES_SSL_MODE || 'require';
@@ -83,19 +85,37 @@ export class SqlExecutor {
       ? parseInt(process.env.POSTGRES_STATEMENT_TIMEOUT)
       : 120000; // 2 minutes default
 
-    this.pool = new Pool({
-      connectionString,
-      ssl: sslConfig,
-      connectionTimeoutMillis,
-      idleTimeoutMillis,
-      max,
-      statement_timeout: statementTimeout,
-    });
+    // Initialize pool manager if not already initialized
+    if (!this.poolManager.isInitialized()) {
+      this.poolManager.initialize({
+        connectionString,
+        ssl: sslConfig,
+        maxConnections: max,
+        idleTimeoutMillis,
+        connectionTimeoutMillis,
+        statementTimeout,
+      });
+    }
   }
 
-  async executeQuery(sql: string, useTransaction: boolean = true): Promise<QueryResult> {
+  async executeQuery(
+    sql: string,
+    useTransaction: boolean = true,
+    timeoutMs?: number
+  ): Promise<QueryResult> {
     const start = Date.now();
-    const client = await this.pool.connect();
+    const pool = this.poolManager.getPool();
+    const client = await pool.connect();
+
+    // Set statement timeout if provided
+    if (timeoutMs && timeoutMs > 0) {
+      try {
+        await client.query(`SET statement_timeout = ${timeoutMs}`);
+      } catch (error) {
+        client.release();
+        throw error;
+      }
+    }
 
     try {
       if (useTransaction && !this.isTransactionCommand(sql)) {
@@ -140,7 +160,11 @@ export class SqlExecutor {
     );
   }
 
-  async executeFile(filepath: string, useTransaction: boolean = true): Promise<QueryResult> {
+  async executeFile(
+    filepath: string,
+    useTransaction: boolean = true,
+    timeoutMs?: number
+  ): Promise<QueryResult> {
     const resolvedPath = resolve(process.cwd(), filepath);
 
     if (!existsSync(resolvedPath)) {
@@ -148,7 +172,7 @@ export class SqlExecutor {
     }
 
     const sql = readFileSync(resolvedPath, 'utf8');
-    return this.executeQuery(sql, useTransaction);
+    return this.executeQuery(sql, useTransaction, timeoutMs);
   }
 
   async getSchema(tables?: string[], allSchemas = false): Promise<SchemaResult> {
@@ -165,12 +189,14 @@ export class SqlExecutor {
       sql = this.buildAllTablesQuery(schemaCondition);
     }
 
-    const result = await this.pool.query(sql);
+    const pool = this.poolManager.getPool();
+    const result = await pool.query(sql);
     return this.parseSchemaResult(result);
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    // Don't close the shared pool, just mark this executor as closed
+    // The pool will be closed when the application exits
   }
 
   private buildSpecificTablesQuery(tableCondition: string, schemaCondition: string): string {

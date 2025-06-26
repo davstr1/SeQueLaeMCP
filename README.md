@@ -182,8 +182,6 @@ npx sequelae backup --tables users,posts --format custom
 ## ⚠️ Limitations
 
 - PostgreSQL only
-- No connection pooling (each command creates new connection)
-- No transaction support (each command auto-commits)
 - Backup requires pg_dump installed locally
 
 ---
@@ -194,12 +192,92 @@ npx sequelae backup --tables users,posts --format custom
 npm test              # Run tests
 npm run build         # Build TypeScript
 npm test -- --coverage # Coverage report
+npm run lint          # Run linter
+npm run format        # Format code
 ```
+
+---
+
+## 🚨 Troubleshooting
+
+### Connection Issues
+
+**Error: `ECONNREFUSED`**
+- Check if PostgreSQL is running
+- Verify DATABASE_URL is correct
+- Check firewall/security group settings
+
+**Error: `ETIMEDOUT`**
+- Increase timeout: `--timeout 30000`
+- Check network connectivity
+- Verify PostgreSQL accepts remote connections
+
+**SSL Certificate Errors**
+```bash
+# For self-signed certificates
+export POSTGRES_SSL_REJECT_UNAUTHORIZED=false
+
+# Or disable SSL (development only)
+export POSTGRES_SSL_MODE=disable
+```
+
+### Query Issues
+
+**Query Timeout**
+```bash
+# Increase timeout to 5 minutes
+npx sequelae --timeout 300000 exec "SELECT pg_sleep(60)"
+
+# Set default timeout
+export QUERY_TIMEOUT=300000
+```
+
+**Large Result Sets**
+- Use LIMIT for large tables
+- Consider pagination for exports
+- JSON mode is more memory efficient
+
+### MCP Mode Issues
+
+**MCP Server Not Starting**
+- Check DATABASE_URL is set
+- Verify Node.js version (14+)
+- Check for port conflicts
+
+**AI Assistant Can't Connect**
+- Ensure `--mcp` flag is used
+- Check MCP configuration in AI tool
+- Verify firewall allows connections
+
+### Common Solutions
+
+1. **Reset connection pool**
+   ```bash
+   # Restart the application
+   pm2 restart sequelae-mcp
+   ```
+
+2. **Test connection**
+   ```bash
+   npx sequelae exec "SELECT 1"
+   ```
+
+3. **Check environment**
+   ```bash
+   node -e "console.log(process.env.DATABASE_URL)"
+   ```
+
+4. **Enable debug logging**
+   ```bash
+   export LOG_LEVEL=debug
+   npx sequelae exec "SELECT * FROM users"
+   ```
 
 ---
 
 ## 📚 More Documentation
 
+- [Production Deployment Guide](./docs/PRODUCTION-DEPLOYMENT.md)
 - [MCP Protocol Details](./MCP.md)
 - [Examples](./EXAMPLES.md)
 - [Contributing](./CONTRIBUTING.md)

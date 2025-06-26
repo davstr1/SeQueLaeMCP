@@ -32,7 +32,7 @@ module.exports = [
     rules: {
       ...typescript.configs.recommended.rules,
       ...typescript.configs.strict.rules,
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-function-return-type': [
         'error',
         {

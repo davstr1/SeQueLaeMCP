@@ -1,0 +1,157 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x, 20.x]
+        
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run linter
+      run: npm run lint
+      
+    - name: Check formatting
+      run: npm run format:check
+    
+    - name: Build TypeScript
+      run: npm run build
+    
+    - name: Run tests with coverage
+      env:
+        DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+        POSTGRES_SSL_MODE: disable
+      run: npm test -- --coverage --coverageReporters=text --coverageReporters=lcov
+    
+    - name: Upload coverage to Codecov
+      if: matrix.node-version == '18.x'
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Test CLI
+      run: |
+        chmod +x bin/sequelae
+        ./bin/sequelae --version
+        ./bin/sequelae --help
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+      continue-on-error: true
+    
+    - name: Run security linter
+      uses: github/super-linter@v5
+      env:
+        DEFAULT_BRANCH: main
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VALIDATE_JAVASCRIPT_ES: true
+        VALIDATE_TYPESCRIPT_ES: true
+        VALIDATE_JSON: true
+        VALIDATE_YAML: true
+        FILTER_REGEX_EXCLUDE: '.*node_modules/.*'
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [test, build, security]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        registry-url: 'https://registry.npmjs.org'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Check if version changed
+      id: version
+      run: |
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+        
+        # Check if tag exists
+        if git rev-parse "v$CURRENT_VERSION" >/dev/null 2>&1; then
+          echo "version_changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "version_changed=true" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create Release Tag
+      if: steps.version.outputs.version_changed == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag -a "v${{ steps.version.outputs.current_version }}" -m "Release v${{ steps.version.outputs.current_version }}"
+        git push origin "v${{ steps.version.outputs.current_version }}"
+    
+    - name: Publish to npm
+      if: steps.version.outputs.version_changed == 'true'
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
