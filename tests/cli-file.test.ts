@@ -42,9 +42,9 @@ describe('CLI File Command', () => {
     console.table = jest.fn();
     process.exit = jest.fn() as never;
 
-    (Pool as jest.MockedClass<typeof Pool>).mockImplementation(() => mockPool as any);
+    (Pool as jest.MockedClass<typeof Pool>).mockImplementation(() => mockPool as unknown as Pool);
     (SqlExecutor as jest.MockedClass<typeof SqlExecutor>).mockImplementation(
-      () => mockExecutor as any
+      () => mockExecutor as unknown as SqlExecutor
     );
 
     // Setup environment

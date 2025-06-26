@@ -1,4 +1,5 @@
 import { validateBackupOptions } from '../src/utils/backup-validator';
+import { BackupOptions } from '../src/types/backup';
 
 describe('Backup Validator Tests', () => {
   describe('validateBackupOptions', () => {
@@ -22,8 +23,8 @@ describe('Backup Validator Tests', () => {
     });
 
     test('should reject invalid format', () => {
-      const options = {
-        format: 'invalid' as any,
+      const options: BackupOptions = {
+        format: 'invalid' as BackupOptions['format'],
       };
 
       expect(() => validateBackupOptions(options)).toThrow('Invalid backup format');

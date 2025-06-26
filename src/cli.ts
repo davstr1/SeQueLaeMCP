@@ -37,11 +37,11 @@ const cliOutput = {
     console.error(message);
     logger.error('CLI error:', { message });
   },
-  table: (data: any) => {
+  table: (data: unknown) => {
     console.table(data);
     logger.debug('CLI table output:', { rowCount: Array.isArray(data) ? data.length : 'N/A' });
   },
-  json: (data: any) => {
+  json: (data: unknown) => {
     const json = JSON.stringify(data);
     console.log(json);
     logger.debug('CLI JSON output:', { data });

@@ -79,14 +79,14 @@ Fix CI test failures caused by TypeScript `any` warnings being treated as errors
 - [ ] Verify all checks pass (lint, test, build)
 - [ ] Confirm exit code is 0 for all jobs
 
-### Phase 5: Address Secrets Issue (Optional)
+### Phase 5: Fix Secrets Configuration
 
-#### Investigate Missing Secrets
-- [ ] Check GitHub repository settings → Secrets and variables → Actions
-- [ ] Verify `CODECOV_TOKEN` exists and is spelled correctly
-- [ ] Verify `NODE_AUTH_TOKEN` exists and is spelled correctly
-- [ ] Check if secrets are repository-level (not environment-specific)
-- [ ] Ensure no branch protection rules block secret access
+#### Fix NPM Token Mismatch
+- [ ] Open `.github/workflows/test.yml`
+- [ ] Find where `NODE_AUTH_TOKEN` is referenced
+- [ ] Change `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}` to match your actual secret name
+- [ ] Or rename the secret in GitHub from `NPM_TOKEN` to `NODE_AUTH_TOKEN`
+- [ ] Verify `CODECOV_TOKEN` is referenced correctly in the workflow file
 
 ## Success Criteria
 - ✅ All TypeScript `any` warnings resolved

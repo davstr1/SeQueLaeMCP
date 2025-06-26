@@ -15,6 +15,34 @@ export interface McpToolResponse {
   }>;
 }
 
+interface HealthInfo {
+  status: 'healthy' | 'unhealthy';
+  timestamp: string;
+  connectionTest?: {
+    success: boolean;
+    latency?: number;
+    error?: string;
+  };
+  database?: {
+    version?: string;
+    error?: string;
+  };
+  connectionPool?: {
+    initialized: boolean;
+    total: number;
+    idle: number;
+    waiting: number;
+    maxConnections: number;
+    idleTimeout: number;
+    connectionTimeout: number;
+    note?: string;
+  };
+  tool?: {
+    name: string;
+    version: string;
+  };
+}
+
 export class McpToolHandler {
   private executor: SqlExecutor | null = null;
 
@@ -365,7 +393,7 @@ export class McpToolHandler {
         throw new Error('SqlExecutor not initialized');
       }
 
-      const healthInfo: any = {
+      const healthInfo: HealthInfo = {
         status: 'healthy',
         timestamp: new Date().toISOString(),
       };
@@ -391,7 +419,7 @@ export class McpToolHandler {
           const versionResult = await this.executor.executeQuery('SELECT version()', false);
           if (versionResult.rows && versionResult.rows.length > 0) {
             healthInfo.database = {
-              version: versionResult.rows[0].version,
+              version: String(versionResult.rows[0].version),
             };
           }
         } catch (error) {
@@ -403,11 +431,18 @@ export class McpToolHandler {
 
       // Get connection pool info if requested
       if (includeConnectionInfo) {
-        const poolManager = (this.executor as any).poolManagerInstance;
+        const poolManager = this.executor.poolManagerInstance;
         if (poolManager && poolManager.getStatus) {
           healthInfo.connectionPool = poolManager.getStatus();
         } else {
           healthInfo.connectionPool = {
+            initialized: false,
+            total: 0,
+            idle: 0,
+            waiting: 0,
+            maxConnections: 0,
+            idleTimeout: 0,
+            connectionTimeout: 0,
             note: 'Pool statistics not available',
           };
         }
