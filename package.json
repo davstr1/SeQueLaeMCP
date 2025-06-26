@@ -2,6 +2,21 @@
   "name": "sequelae-mcp",
   "version": "1.0.0",
   "description": "Let Claude, Cursor, and other AI agents run real SQL queries on live Postgres databases. No more copy-pasting SQL, stale schema docs, or hallucinated DB adapters — just raw, real-time access. Now with MCP support!",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/sequelae-mcp.git"
+  },
+  "homepage": "https://github.com/yourusername/sequelae-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/yourusername/sequelae-mcp/issues"
+  },
+  "author": "",
+  "license": "MIT",
   "keywords": [
     "cli",
     "postgres",

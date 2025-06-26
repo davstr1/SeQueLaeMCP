@@ -1,0 +1,43 @@
+# Source files (we publish dist)
+src/
+tests/
+*.ts
+!*.d.ts
+
+# Development files
+dev-test/
+dev-docs/
+docs/
+.github/
+.husky/
+.claude/
+CLAUDE.md
+
+# Config files
+jest.config.js
+tsconfig.json
+eslint.config.js
+.prettierrc
+.prettierignore
+
+# Environment
+.env
+.env.*
+
+# Logs and coverage
+*.log
+coverage/
+.nyc_output/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Misc
+*.tmp
+*.temp
+.cache/
