@@ -67,9 +67,10 @@ jobs:
 
       - name: Upload coverage to Coveralls
         if: matrix.node-version == '18.x'
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./coverage/lcov.info
         continue-on-error: true
 
   build:
