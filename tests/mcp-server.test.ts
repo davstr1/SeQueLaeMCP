@@ -40,8 +40,13 @@ describe('SqlAgentMcpServer', () => {
     test('should return all available tools', () => {
       const response = server.listTools();
 
-      expect(response.tools).toHaveLength(3);
-      expect(response.tools.map(t => t.name)).toEqual(['sql_exec', 'sql_file', 'sql_schema']);
+      expect(response.tools).toHaveLength(4);
+      expect(response.tools.map(t => t.name)).toEqual([
+        'sql_exec',
+        'sql_file',
+        'sql_schema',
+        'sql_backup',
+      ]);
 
       // Check first tool structure
       expect(response.tools[0]).toMatchObject({
@@ -85,7 +90,7 @@ describe('SqlAgentMcpServer', () => {
       const response = await server.handleRequest(request);
 
       expect(response).toHaveProperty('tools');
-      expect((response as any).tools).toHaveLength(3);
+      expect((response as any).tools).toHaveLength(4);
     });
 
     test('should handle tools/call request', async () => {

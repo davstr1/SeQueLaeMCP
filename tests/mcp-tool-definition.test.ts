@@ -3,12 +3,13 @@ import { SQL_AGENT_TOOLS, getToolDefinition, validateToolInput } from '../src/mc
 describe('MCP Tool Definition', () => {
   describe('SQL_AGENT_TOOLS', () => {
     test('should define all required tools', () => {
-      expect(SQL_AGENT_TOOLS).toHaveLength(3);
+      expect(SQL_AGENT_TOOLS).toHaveLength(4);
 
       const toolNames = SQL_AGENT_TOOLS.map(t => t.name);
       expect(toolNames).toContain('sql_exec');
       expect(toolNames).toContain('sql_file');
       expect(toolNames).toContain('sql_schema');
+      expect(toolNames).toContain('sql_backup');
     });
 
     test('each tool should have required properties', () => {

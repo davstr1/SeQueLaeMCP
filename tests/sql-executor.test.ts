@@ -33,7 +33,7 @@ describe('SqlExecutor', () => {
     test('should create pool with correct configuration', () => {
       expect(Pool).toHaveBeenCalledWith({
         connectionString: 'postgresql://test:test@localhost:5432/test',
-        ssl: { rejectUnauthorized: false },
+        ssl: { rejectUnauthorized: true },
       });
     });
   });

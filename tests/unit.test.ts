@@ -819,9 +819,10 @@ SELECT * FROM users;`;
 
         // This should be caught by the backup method
         const executor = new SqlExecutor(mockConnectionString);
-        expect(executor.backup(options)).rejects.toThrow(
-          'Cannot specify both dataOnly and schemaOnly'
-        );
+        executor.backup(options).then(result => {
+          expect(result.success).toBe(false);
+          expect(result.error).toBe('Cannot specify both dataOnly and schemaOnly options');
+        });
       });
 
       test('should handle directory traversal attempts', () => {
@@ -830,7 +831,10 @@ SELECT * FROM users;`;
         };
 
         const executor = new SqlExecutor(mockConnectionString);
-        expect(executor.backup(options)).rejects.toThrow('directory traversal not allowed');
+        executor.backup(options).then(result => {
+          expect(result.success).toBe(false);
+          expect(result.error).toContain('directory traversal not allowed');
+        });
       });
 
       test('should quote special characters in table names', () => {
