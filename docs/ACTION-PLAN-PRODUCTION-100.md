@@ -13,12 +13,12 @@
 
 ### Phase 2: Add SSL Configuration
 
-- [ ] Add `POSTGRES_SSL_MODE` environment variable support
-- [ ] Update SqlExecutor to read SSL configuration
-- [ ] Make `rejectUnauthorized` configurable based on env var
-- [ ] Default to secure (true) unless explicitly disabled
-- [ ] Update `.env.example` with SSL configuration
-- [ ] Update README with SSL configuration docs
+- [x] Add `POSTGRES_SSL_MODE` environment variable support
+- [x] Update SqlExecutor to read SSL configuration
+- [x] Make `rejectUnauthorized` configurable based on env var
+- [x] Default to secure (true) unless explicitly disabled
+- [x] Update `.env.example` with SSL configuration
+- [x] Update README with SSL configuration docs
 
 ### Phase 3: Update Dependencies
 

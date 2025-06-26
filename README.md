@@ -93,12 +93,22 @@ npm install -D sequelae-mcp
 Create `.env` in your project root:
 ```env
 DATABASE_URL=postgresql://[user]:[password]@[host]:[port]/[database]
+
+# Optional SSL Configuration
+POSTGRES_SSL_MODE=require                # disable, require (default), verify-ca, verify-full
+POSTGRES_SSL_REJECT_UNAUTHORIZED=true    # true (default) or false for self-signed certs
 ```
 
 **Examples:**
 - **Supabase**: `postgresql://postgres.ref:[password]@aws-0-region.pooler.supabase.com:5432/postgres`
 - **Neon**: `postgresql://user:[password]@host.neon.tech/dbname`
 - **Local**: `postgresql://postgres:password@localhost:5432/mydb`
+
+**SSL Configuration:**
+- `POSTGRES_SSL_MODE=require` - Default, requires SSL but allows self-signed certificates
+- `POSTGRES_SSL_MODE=disable` - No SSL (for local development)
+- `POSTGRES_SSL_MODE=verify-full` - Full SSL verification (production recommended)
+- `POSTGRES_SSL_REJECT_UNAUTHORIZED=false` - Allow self-signed certificates
 
 ### 3. Add to AI Instructions
 Add to your `CLAUDE.md` or AI instructions:
@@ -174,7 +184,6 @@ npx sequelae backup --tables users,posts --format custom
 - PostgreSQL only
 - No connection pooling (each command creates new connection)
 - No transaction support (each command auto-commits)
-- SSL certificate validation disabled by default
 - Backup requires pg_dump installed locally
 
 ---

@@ -48,9 +48,27 @@ export class SqlExecutor {
 
   constructor(connectionString: string) {
     this.connectionString = connectionString;
+
+    // Configure SSL based on environment variables
+    const sslMode = process.env.POSTGRES_SSL_MODE || 'require';
+    const rejectUnauthorized = process.env.POSTGRES_SSL_REJECT_UNAUTHORIZED !== 'false';
+
+    let sslConfig: boolean | { rejectUnauthorized: boolean } = false;
+
+    if (sslMode !== 'disable') {
+      sslConfig = {
+        rejectUnauthorized: rejectUnauthorized,
+      };
+
+      // For verify-ca and verify-full modes, ensure rejectUnauthorized is true
+      if (sslMode === 'verify-ca' || sslMode === 'verify-full') {
+        sslConfig.rejectUnauthorized = true;
+      }
+    }
+
     this.pool = new Pool({
       connectionString,
-      ssl: { rejectUnauthorized: false },
+      ssl: sslConfig,
     });
   }
 
