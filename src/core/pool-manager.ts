@@ -1,4 +1,4 @@
-import { Pool, PoolConfig } from 'pg';
+import { Pool, PoolConfig, PoolClient } from 'pg';
 import { logger } from '../utils/logger';
 
 export interface PoolManagerConfig {
@@ -71,6 +71,31 @@ export class PoolManager {
       throw new Error('Pool not initialized. Call initialize() first.');
     }
     return this.pool;
+  }
+
+  /**
+   * Get a client with retry logic
+   */
+  async getClient(maxRetries = 3, initialDelay = 1000): Promise<PoolClient> {
+    const pool = this.getPool();
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await pool.connect();
+      } catch (error) {
+        logger.warn(`Failed to get client (attempt ${attempt + 1}/${maxRetries})`, { error });
+
+        if (attempt === maxRetries - 1) {
+          throw error;
+        }
+
+        // Simple exponential backoff: 1s, 2s, 4s
+        const delay = initialDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    throw new Error('Failed to get client after all retries');
   }
 
   /**

@@ -110,8 +110,7 @@ export class SqlExecutor {
     timeoutMs?: number
   ): Promise<QueryResult> {
     const start = Date.now();
-    const pool = this.poolManager.getPool();
-    const client = await pool.connect();
+    const client = await this.poolManager.getClient();
 
     // Set statement timeout if provided
     if (timeoutMs && timeoutMs > 0) {
