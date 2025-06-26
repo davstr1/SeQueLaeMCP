@@ -3,15 +3,7 @@
 [![CI](https://github.com/davstr1/SeQueLaeMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/davstr1/SeQueLaeMCP/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/davstr1/SeQueLaeMCP/badge.svg?branch=main)](https://coveralls.io/github/davstr1/SeQueLaeMCP?branch=main)
 [![codecov](https://codecov.io/gh/davstr1/SeQueLaeMCP/branch/main/graph/badge.svg)](https://codecov.io/gh/davstr1/SeQueLaeMCP)
-[![npm version](https://img.shields.io/npm/v/sequelae-mcp.svg)](https://www.npmjs.com/package/sequelae-mcp)
-[![npm downloads](https://img.shields.io/npm/dm/sequelae-mcp.svg)](https://www.npmjs.com/package/sequelae-mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/node/v/sequelae-mcp.svg)](https://nodejs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
-[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/davstr1/SeQueLaeMCP/pulls)
-[![GitHub Stars](https://img.shields.io/github/stars/davstr1/SeQueLaeMCP.svg)](https://github.com/davstr1/SeQueLaeMCP/stargazers)
-[![GitHub Issues](https://img.shields.io/github/issues/davstr1/SeQueLaeMCP.svg)](https://github.com/davstr1/SeQueLaeMCP/issues)
+[![MCP](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io)
 
 MCP-enabled PostgreSQL tool that lets AI assistants execute SQL directly. Also works as a CLI for humans.
 
