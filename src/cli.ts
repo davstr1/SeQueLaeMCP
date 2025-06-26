@@ -784,8 +784,14 @@ if (require.main === module) {
     process.exit(1);
   });
 
-  // Handle process errors - ignore db termination
-  process.on('unhandledRejection', () => {});
-  process.on('uncaughtException', () => {});
-  process.on('error', () => {});
+  // Handle process errors properly
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
+  });
+
+  process.on('uncaughtException', error => {
+    console.error('Uncaught Exception:', error);
+    process.exit(1);
+  });
 }
