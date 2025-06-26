@@ -4,7 +4,7 @@ const prettierConfig = require('eslint-config-prettier');
 
 module.exports = [
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**', '*.js', '!eslint.config.js'],
+    ignores: ['dist/**', 'coverage/**', 'node_modules/**'],
   },
   {
     files: ['src/**/*.ts'],
@@ -95,6 +95,42 @@ module.exports = [
         },
       ],
       '@typescript-eslint/no-require-imports': 'off', // Allow require in tests
+      ...prettierConfig.rules,
+    },
+  },
+  {
+    // JavaScript files
+    files: ['**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        jest: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+      },
+    },
+    rules: {
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+      'no-console': 'off',
       ...prettierConfig.rules,
     },
   },

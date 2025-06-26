@@ -36,7 +36,7 @@ async function benchmark() {
         const duration = Date.now() - start;
         times.push(duration);
         process.stdout.write('.');
-      } catch (error) {
+      } catch (_error) {
         process.stdout.write('x');
       }
     }
@@ -61,7 +61,7 @@ async function benchmark() {
     const duration = Date.now() - start;
     console.log(`  MCP tools/list: ${duration}ms`);
     console.log(`  Tools found: ${JSON.parse(result.stdout).tools?.length || 0}`);
-  } catch (error) {
+  } catch (_error) {
     console.log('  MCP mode test failed');
   }
 

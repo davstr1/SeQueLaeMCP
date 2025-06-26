@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { spawn } = require('child_process');
-const readline = require('readline');
+// const readline = require('readline');
 
 // Color codes for output
 const colors = {
@@ -53,7 +53,7 @@ mcpServer.stdout.on('data', data => {
               const result = JSON.parse(item.text);
               log('\n📊 Result:', 'cyan');
               console.log(JSON.stringify(result, null, 2));
-            } catch (e) {
+            } catch (_e) {
               // Not JSON, just print as is
               log('\n📄 Result:', 'cyan');
               console.log(item.text);
@@ -63,7 +63,7 @@ mcpServer.stdout.on('data', data => {
           }
         });
       }
-    } catch (e) {
+    } catch (_e) {
       // Not JSON, print raw
       console.log('Raw output:', line);
     }

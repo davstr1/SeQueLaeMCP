@@ -67,7 +67,7 @@ mcpServer.stdout.on('data', data => {
         log('\n📥 Response:', 'cyan');
         console.log(JSON.stringify(response, null, 2));
       }
-    } catch (e) {
+    } catch (_e) {
       // Not JSON
       console.log('Raw:', line);
     }
@@ -182,7 +182,7 @@ rl.on('line', line => {
     try {
       const parsed = JSON.parse(input);
       sendRequest(parsed.method || 'unknown', parsed.params || {});
-    } catch (e) {
+    } catch (_e) {
       log('Invalid JSON', 'red');
     }
   } else {

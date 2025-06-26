@@ -70,7 +70,7 @@ async function measureThroughput(query, concurrency) {
   async function runQuery() {
     try {
       await execAsync(`npx sequelae exec "${query}"`);
-    } catch (e) {
+    } catch (_e) {
       // Ignore errors for throughput test
     }
     completed++;
