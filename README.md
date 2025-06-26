@@ -14,13 +14,71 @@ MCP-enabled PostgreSQL tool that lets AI assistants execute SQL directly. Also w
 sequelae-cli implements the Model Context Protocol (MCP), allowing AI assistants like Claude to execute SQL queries directly on PostgreSQL databases.
 
 ### Quick Start
-```bash
-# Install
-npm install -D sequelae-mcp
 
-# Run as MCP server
-npx sequelae --mcp
-```
+1. **Install sequelae-mcp in your project:**
+   ```bash
+   cd /path/to/your/project
+   npm install sequelae-mcp
+   ```
+
+2. **Set your database connection:**
+   Create a `.env` file in your project root:
+   ```env
+   DATABASE_URL=postgresql://user:password@localhost:5432/mydb
+   ```
+
+3. **Configure your AI tool:**
+
+   **For Claude Desktop:**
+   Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac):
+   ```json
+   {
+     "mcpServers": {
+       "sequelae": {
+         "command": "npx",
+         "args": ["sequelae-mcp", "--mcp"],
+         "cwd": "/path/to/your/project"
+       }
+     }
+   }
+   ```
+   
+   **For Claude Code (CLI):**
+   ```bash
+   # One-time setup: Navigate to your project and add sequelae
+   cd /path/to/your/project
+   claude mcp add sequelae npx sequelae-mcp --mcp
+   
+   # From now on, just start Claude Code
+   claude
+   # Claude automatically launches sequelae when it starts!
+   
+   # Optional: Check MCP server status
+   > /mcp
+   # Should show: sequelae: connected ✓
+   ```
+
+   **For Cursor.AI:**
+   Create `.cursor/mcp.json` in your home directory or project:
+   ```json
+   {
+     "mcpServers": {
+       "sequelae": {
+         "command": "npx",
+         "args": ["-y", "sequelae-mcp", "--mcp"],
+         "cwd": "/path/to/your/project"
+       }
+     }
+   }
+   ```
+   
+   Or use Cursor Settings UI:
+   - Open Command Palette (Ctrl/Cmd + Shift + P)
+   - Search for "Cursor Settings"
+   - Navigate to MCP Servers section
+   - Add sequelae-mcp with the project path
+   
+   **Important**: You don't need to manually launch sequelae! Claude Desktop, Claude Code, and Cursor all automatically start the MCP server when they need it.
 
 ### Available MCP Tools
 
