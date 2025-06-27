@@ -2,12 +2,26 @@
 
 Based on: `/Users/imac1/Documents/code2024/sequelaemcp/dev-docs/REVIEW-extending-test-coverage.md`
 
+## 🚨 CRITICAL: Test Isolation Strategy
+
+### Database Tests MUST Be Isolated
+- **NEVER** run database tests in CI/GitHub Actions
+- **ALWAYS** use `.integration.test.ts` suffix for database tests
+- **ALWAYS** use `describeWithDb` helper from `test-utils.ts`
+- **NEVER** mix unit tests and integration tests in same file
+
+### File Naming Convention
+- `*.test.ts` - Unit tests (run in CI)
+- `*.integration.test.ts` - Database tests (local only)
+- CI automatically excludes `*.integration.test.ts` files
+
 ## Phase 1: Unit Tests for Backup Functionality
 
 ### 1.1 Create backup unit test file
-- [ ] Create `tests/backup.test.ts` for unit tests
+- [ ] Create `tests/backup.test.ts` for unit tests (**NOT** backup.integration.test.ts)
 - [ ] Import necessary mocking utilities from Jest
 - [ ] Set up test structure with proper describe blocks
+- [ ] **NO DATABASE CONNECTION** - mock everything
 
 ### 1.2 Mock child_process.spawn for pg_dump
 - [ ] Create mock implementation of spawn
@@ -126,26 +140,33 @@ Based on: `/Users/imac1/Documents/code2024/sequelaemcp/dev-docs/REVIEW-extending
 - [ ] Test mixed type arrays
 - [ ] Test circular reference handling
 
-## Phase 6: Integration Test Updates
+## Phase 6: Integration Test Updates (🚨 LOCAL ONLY - NEVER IN CI)
 
 ### 6.1 Update existing integration tests
+- [ ] Rename any database test files to `*.integration.test.ts`
 - [ ] Ensure all use `describeWithDb` helper
 - [ ] Verify DATABASE_URL check at start
 - [ ] Add skip message when no database
+- [ ] **VERIFY** these files are in test:integration pattern
+- [ ] **VERIFY** these files are NOT in test:unit pattern
 
 ### 6.2 Create new integration test files
-- [ ] Create `tests/backup.integration.test.ts`
-- [ ] Create `tests/transaction.integration.test.ts`
+- [ ] Create `tests/backup.integration.test.ts` (REAL pg_dump)
+- [ ] Create `tests/transaction.integration.test.ts` (REAL database)
 - [ ] Add real pg_dump execution tests (local only)
 - [ ] Add real transaction rollback tests
+- [ ] **MUST** use `describeWithDb` wrapper
+- [ ] **MUST** check for DATABASE_URL
 
 ## Phase 7: Test Infrastructure
 
-### 7.1 Update test scripts
-- [ ] Verify `test:unit` excludes all integration tests
-- [ ] Verify `test:integration` includes all integration tests
-- [ ] Verify `test:ci` only runs unit tests
+### 7.1 Update test scripts (🚨 CRITICAL FOR CI)
+- [ ] Verify `test:unit` pattern EXCLUDES `*.integration.test.ts`
+- [ ] Verify `test:integration` pattern INCLUDES ONLY `*.integration.test.ts`
+- [ ] Verify `test:ci` = `test:unit` (NO DATABASE TESTS)
 - [ ] Add `test:coverage:unit` script for unit test coverage only
+- [ ] **TEST** by running `DATABASE_URL="" npm run test:ci` - should pass
+- [ ] **TEST** GitHub Actions workflow uses `test:ci` NOT `test`
 
 ### 7.2 Create test utilities
 - [ ] Create mock factory for spawn
@@ -161,8 +182,11 @@ Based on: `/Users/imac1/Documents/code2024/sequelaemcp/dev-docs/REVIEW-extending
 - [ ] Document how to run different test suites
 - [ ] Add testing guide to README
 
-### 8.2 Verify CI configuration
-- [ ] Ensure GitHub Actions only runs unit tests
+### 8.2 Verify CI configuration (🚨 NO DATABASE IN CI)
+- [ ] **AUDIT** `.github/workflows/ci.yml` - NO postgres service
+- [ ] **AUDIT** `.github/workflows/test.yml` - NO postgres service  
+- [ ] **VERIFY** workflows use `npm run test:ci` NOT `npm test`
+- [ ] **VERIFY** no DATABASE_URL in CI environment
 - [ ] Ensure coverage reports exclude integration tests
 - [ ] Add coverage threshold checks
 - [ ] Add coverage trend tracking
@@ -177,8 +201,22 @@ Based on: `/Users/imac1/Documents/code2024/sequelaemcp/dev-docs/REVIEW-extending
 
 ## Notes
 
+- **CRITICAL**: Integration tests with real DB connections are for LOCAL DEVELOPMENT ONLY
 - Always mock external dependencies in unit tests
 - Never require DATABASE_URL in unit tests
 - Keep tests focused on behavior, not implementation
 - Use descriptive test names that explain the scenario
 - Group related tests in describe blocks
+
+## Test File Checklist
+
+Before creating ANY test file, ask:
+1. Does this test need a real database? 
+   - YES → Name it `*.integration.test.ts`
+   - NO → Name it `*.test.ts`
+2. Will this test run in CI?
+   - YES → Must be `*.test.ts` with ALL mocks
+   - NO → Must be `*.integration.test.ts`
+3. Is DATABASE_URL required?
+   - YES → Must use `describeWithDb` helper
+   - NO → Regular `describe` is fine
