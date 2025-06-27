@@ -104,6 +104,8 @@ sequelae-cli implements the Model Context Protocol (MCP), allowing AI assistants
 }
 ```
 
+**Note**: In MCP mode, JSONB column structures are not analyzed. Use the CLI directly to see JSONB structures.
+
 #### `sql_file` - Execute SQL from files
 ```json
 {
@@ -274,6 +276,37 @@ npx sequelae exec "SELECT * FROM posts" --json > posts.json
 # Backup database
 npx sequelae backup --tables users,posts --format custom
 ```
+
+### JSONB Structure Analysis
+
+sequelae automatically analyzes JSONB columns when displaying schema:
+
+```bash
+# View schema with JSONB structure
+npx sequelae schema
+
+# Output example:
+# 📋 public.users
+#   Columns:
+#     - id: uuid DEFAULT gen_random_uuid()
+#     - email: text
+#     - metadata: jsonb (nullable)
+#       Structure of metadata:
+#         - name: string
+#         - age?: number
+#         - tags?: array<string>
+#         - address?: object
+#           - street: string
+#           - city: string
+#           - zip?: string
+```
+
+The JSONB analyzer:
+- Samples up to 10 rows to determine structure
+- Shows field types (string, number, boolean, object, array, null)
+- Marks optional fields with `?`
+- Displays nested object structures with indentation
+- Shows array element types (e.g., `array<string>`)
 
 ---
 
