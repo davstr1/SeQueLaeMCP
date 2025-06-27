@@ -8,6 +8,7 @@ import * as packageJson from '../package.json';
 import { SqlExecutor } from './core/sql-executor';
 import { BackupOptions } from './types/backup';
 import { logger } from './utils/logger';
+import { sampleJsonbColumn, analyzeJsonStructure, formatJsonStructure } from './jsonb-analyzer';
 
 interface Constraint {
   constraint_type: string;
@@ -802,6 +803,10 @@ async function main(): Promise<void> {
           // Display columns
           const columns: Column[] = JSON.parse(table.columns as string);
           cliOutput.log('  Columns:');
+
+          // Collect JSONB columns for analysis
+          const jsonbColumns: { column: Column; tableName: string; schemaName: string }[] = [];
+
           for (const col of columns) {
             const nullable = col.is_nullable === 'YES' ? ' (nullable)' : '';
             const dataType = col.character_maximum_length
@@ -809,6 +814,41 @@ async function main(): Promise<void> {
               : col.data_type;
             const defaultVal = col.column_default ? ` DEFAULT ${col.column_default}` : '';
             cliOutput.log(`    - ${col.column_name}: ${dataType}${nullable}${defaultVal}`);
+
+            // Check if this is a JSONB column
+            if (col.data_type === 'jsonb') {
+              jsonbColumns.push({
+                column: col,
+                tableName: table.table_name as string,
+                schemaName: table.table_schema as string,
+              });
+            }
+          }
+
+          // Analyze JSONB columns if any
+          if (jsonbColumns.length > 0) {
+            const client = await pool.connect();
+            try {
+              for (const { column, tableName, schemaName } of jsonbColumns) {
+                const samples = await sampleJsonbColumn(
+                  client,
+                  `${schemaName}.${tableName}`,
+                  column.column_name,
+                  10
+                );
+
+                if (samples.length > 0) {
+                  const structure = analyzeJsonStructure(samples);
+                  const formatted = formatJsonStructure(structure);
+                  if (formatted.trim()) {
+                    cliOutput.log(`      Structure of ${column.column_name}:`);
+                    cliOutput.log(formatted);
+                  }
+                }
+              }
+            } finally {
+              client.release();
+            }
           }
 
           // Display constraints

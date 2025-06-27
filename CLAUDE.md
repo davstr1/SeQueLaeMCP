@@ -9,7 +9,7 @@ sequelae-mcp is an MCP-enabled PostgreSQL tool that lets AI assistants execute S
 ## User Commands (prefix with --):
 
 --GCP  
-Commit and push all staged changes.
+Check if changes to the codebase, then if yes Commit and push all staged changes.
 
 --MIND  
 Before any action, remind yourself:  
@@ -23,26 +23,26 @@ Before any action, remind yourself:
 - SoT (Single Source of Truth)
 
 --WD  
-Run --X and --MIND.  
+Run --X and --MIND and --GCP.
 Do a quick, MVP-level review of the codebase. regarding what's described along with the command. 
 Write an actionable checklist in /dev-docs/REVIEW-***.md.  
 Don't touch code or other docs.  
 When done, --GCP and output the doc path.
 
 --AP  
-Run --X and --MIND.  
+Run --X and --MIND and --GCP    
 Take the latest review and break it down into a simple, step-by-step action plan with checkboxes—keep splitting steps until atomic.  
 Save as /dev-docs/ACTION-PLAN-***.md, then --GCP.
 
 --EXE  
-Run --MIND, then execute the action plan (from file), checking off steps as you go.  
+Run --MIND and --GCP   then execute the action plan (from file), checking off steps as you go.  
 Commit and push (--GCP) after each step.
 
 --TERMINATOR  
 Run --EXE, then --DS.
 
 --CD  
-Run --MIND.  
+Run --MIND + --GCP    
 Find and delete obsolete .md files, then --GCP.
 
 --DS  
@@ -51,7 +51,7 @@ Don't stop until the process is totally finished.
 --X  
 Don't touch the codebase, except for the one file specified (if any).
 
---READY? --MIND --X then --WD about is this codebase 100% production ready, and what's still lacking if not ? 
+--READY? --MIND --X --GCP  then --WD about is this codebase 100% production ready, and what's still lacking if not ? 
 - Is error handling robust and consistent?
 - Is test coverage meaningful and adequate?
 - Do the tests catch real issues, or are they just for show?
