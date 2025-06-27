@@ -1,6 +1,6 @@
 {
   "name": "sequelae-mcp",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Let Claude, Cursor, and other AI agents run real SQL queries on live Postgres databases. No more copy-pasting SQL, stale schema docs, or hallucinated DB adapters — just raw, real-time access. Now with MCP support!",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
