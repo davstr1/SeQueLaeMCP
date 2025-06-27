@@ -32,7 +32,7 @@ When done, --GCP and output the doc path.
 --AP  
 Run --X and --MIND.  
 Take the latest review and break it down into a simple, step-by-step action plan with checkboxes—keep splitting steps until atomic.  
-Save as /docs/ACTION-PLAN-***.md, then --GCP.
+Save as /dev-docs/ACTION-PLAN-***.md, then --GCP.
 
 --EXE  
 Run --MIND, then execute the action plan (from file), checking off steps as you go.  
