@@ -1,6 +1,4 @@
-<div align="center">
-  <img src="./src/assets/logo.-sequelae-mcp.png" alt="sequelae-mcp logo" width="200" />
-</div>
+<img src="./src/assets/logo.-sequelae-mcp.png" alt="sequelae-mcp logo" width="300" />
 
 # sequelae-mcp
 
