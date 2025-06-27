@@ -750,9 +750,6 @@ async function main(): Promise<void> {
         } finally {
           await executor.close();
         }
-      } else if (filteredArgs.length > 0 && isDirectSqlCommand(filteredArgs[0])) {
-        // Direct SQL command - join all args as the SQL query
-        sql = filteredArgs.join(' ');
       } else {
         // Unknown command
         if (jsonMode) {
