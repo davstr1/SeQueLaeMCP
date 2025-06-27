@@ -48,6 +48,9 @@ Find and delete obsolete .md files, then --GCP.
 --DS  
 Don't stop until the process is totally finished.
 
+--PUB
+--MIND, --GPC then run the tests, correct any error then --GPC and npm publish
+
 --X  
 Don't touch the codebase, except for the one file specified (if any).
 
