@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="./src/assets/logo.-sequelae-mcp.png" alt="sequelae-mcp logo" width="200" />
+</div>
+
 # sequelae-mcp
 
 [![CI](https://github.com/davstr1/SeQueLaeMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/davstr1/SeQueLaeMCP/actions/workflows/ci.yml)
