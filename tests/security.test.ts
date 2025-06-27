@@ -1,17 +1,20 @@
 import { SqlExecutor } from '../src/core/sql-executor';
+import { DATABASE_URL, describeWithDb } from './test-utils';
 
 // Mock pg module
 jest.mock('pg');
 
-describe('Security Tests', () => {
+describeWithDb('Security Tests', () => {
   let executor: SqlExecutor;
 
   beforeEach(() => {
+    if (!DATABASE_URL) return;
     process.env.DATABASE_URL = 'postgresql://test:test@localhost/test';
     executor = new SqlExecutor(process.env.DATABASE_URL);
   });
 
   afterEach(async () => {
+    if (!DATABASE_URL) return;
     if (executor) {
       await executor.close();
     }

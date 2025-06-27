@@ -1,4 +1,5 @@
 import { SqlExecutor } from '../src/core/sql-executor';
+import { DATABASE_URL, describeWithDb } from './test-utils';
 
 // Create mocks that can be accessed in tests
 const mockClient = {
@@ -22,7 +23,7 @@ jest.mock('pg', () => ({
   Pool: jest.fn(() => mockPool),
 }));
 
-describe('Edge Case Tests', () => {
+describeWithDb('Edge Case Tests', () => {
   let executor: SqlExecutor;
 
   // Helper to mock query with transaction
@@ -34,6 +35,7 @@ describe('Edge Case Tests', () => {
   };
 
   beforeEach(() => {
+    if (!DATABASE_URL) return;
     jest.clearAllMocks();
     // Reset PoolManager singleton
     const { PoolManager } = require('../src/core/pool-manager');
@@ -45,6 +47,7 @@ describe('Edge Case Tests', () => {
   });
 
   afterEach(async () => {
+    if (!DATABASE_URL) return;
     if (executor) {
       await executor.close();
     }

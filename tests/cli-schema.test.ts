@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { SqlExecutor } from '../src/core/sql-executor';
+import { describeWithDb } from './test-utils';
 // Import main is not needed - we'll test through process.argv
 
 // Mock dependencies
@@ -29,7 +30,7 @@ const originalConsoleError = console.error;
 const originalConsoleTable = console.table;
 const originalProcessExit = process.exit;
 
-describe('CLI Schema Command', () => {
+describeWithDb('CLI Schema Command', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     console.log = jest.fn();

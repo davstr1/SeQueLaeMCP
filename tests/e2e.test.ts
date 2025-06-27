@@ -1,25 +1,18 @@
 import { Pool } from 'pg';
-import { config } from 'dotenv';
-import { resolve } from 'path';
 import { spawn } from 'child_process';
-
-// Load .env from root
-config({ path: resolve(__dirname, '..', '.env') });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set in .env file');
-}
+import { DATABASE_URL, describeWithDb } from './test-utils';
 
 // Test table names
 const USERS_TABLE = 'users_e2e_test_sequelae';
 const POSTS_TABLE = 'posts_e2e_test_sequelae';
 const JSONB_TABLE = 'jsonb_e2e_test_sequelae';
 
-describe('Sequelae E2E Tests', () => {
+describeWithDb('Sequelae E2E Tests', () => {
   let pool: Pool;
 
   beforeAll(async () => {
+    if (!DATABASE_URL) return;
+
     pool = new Pool({
       connectionString: DATABASE_URL,
       ssl: process.env.POSTGRES_SSL_MODE === 'disable' ? false : { rejectUnauthorized: false },
@@ -45,6 +38,8 @@ describe('Sequelae E2E Tests', () => {
   });
 
   afterAll(async () => {
+    if (!pool) return;
+
     try {
       // Clean up test tables
       await pool.query(`DROP TABLE IF EXISTS ${POSTS_TABLE} CASCADE`);

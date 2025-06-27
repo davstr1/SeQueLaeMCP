@@ -1,23 +1,16 @@
 import { Pool } from 'pg';
-import { config } from 'dotenv';
-import { resolve } from 'path';
 import { spawn } from 'child_process';
-
-// Load .env from root
-config({ path: resolve(__dirname, '..', '.env') });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set in .env file');
-}
+import { DATABASE_URL, describeWithDb } from './test-utils';
 
 // Test table name
 const JSONB_TABLE = 'jsonb_schema_test_sequelae';
 
-describe('JSONB Schema Text Output Tests', () => {
+describeWithDb('JSONB Schema Text Output Tests', () => {
   let pool: Pool;
 
   beforeAll(async () => {
+    if (!DATABASE_URL) return;
+
     pool = new Pool({
       connectionString: DATABASE_URL,
       ssl: process.env.POSTGRES_SSL_MODE === 'disable' ? false : { rejectUnauthorized: false },
@@ -58,6 +51,8 @@ describe('JSONB Schema Text Output Tests', () => {
   });
 
   afterAll(async () => {
+    if (!pool) return;
+
     try {
       // Clean up test table
       await pool.query(`DROP TABLE IF EXISTS ${JSONB_TABLE} CASCADE`);

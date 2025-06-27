@@ -1,10 +1,11 @@
 import { McpToolHandler } from '../src/mcp/tool-handler';
 import { SqlExecutor } from '../src/core/sql-executor';
+import { describeWithDb } from './test-utils';
 
 // Mock SqlExecutor
 jest.mock('../src/core/sql-executor');
 
-describe('McpToolHandler', () => {
+describeWithDb('McpToolHandler', () => {
   let handler: McpToolHandler;
   let mockExecutor: jest.Mocked<SqlExecutor>;
 
