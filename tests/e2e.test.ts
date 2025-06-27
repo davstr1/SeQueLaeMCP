@@ -14,6 +14,7 @@ if (!DATABASE_URL) {
 // Test table names
 const USERS_TABLE = 'users_e2e_test_sequelae';
 const POSTS_TABLE = 'posts_e2e_test_sequelae';
+const JSONB_TABLE = 'jsonb_e2e_test_sequelae';
 
 describe('Sequelae E2E Tests', () => {
   let pool: Pool;
@@ -40,6 +41,7 @@ describe('Sequelae E2E Tests', () => {
     // Clean up any leftover tables from previous runs
     await pool.query(`DROP TABLE IF EXISTS ${POSTS_TABLE} CASCADE`);
     await pool.query(`DROP TABLE IF EXISTS ${USERS_TABLE} CASCADE`);
+    await pool.query(`DROP TABLE IF EXISTS ${JSONB_TABLE} CASCADE`);
   });
 
   afterAll(async () => {
@@ -47,6 +49,7 @@ describe('Sequelae E2E Tests', () => {
       // Clean up test tables
       await pool.query(`DROP TABLE IF EXISTS ${POSTS_TABLE} CASCADE`);
       await pool.query(`DROP TABLE IF EXISTS ${USERS_TABLE} CASCADE`);
+      await pool.query(`DROP TABLE IF EXISTS ${JSONB_TABLE} CASCADE`);
     } catch (_error) {
       // Ignore errors during cleanup
     } finally {
@@ -515,6 +518,84 @@ describe('Sequelae E2E Tests', () => {
       const result = await execSequelae(['SELECT', 'COUNT(*)', 'FROM', USERS_TABLE]);
       expect(result.code).toBe(0);
       expect(JSON.stringify((result.json as any).rows)).toContain('count');
+    });
+  });
+
+  describe('JSONB Schema Analysis', () => {
+    beforeAll(async () => {
+      // Create table with JSONB column
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS ${JSONB_TABLE} (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          metadata jsonb,
+          settings jsonb,
+          created_at timestamptz DEFAULT now()
+        )
+      `);
+
+      // Insert diverse JSON data
+      await pool.query(`
+        INSERT INTO ${JSONB_TABLE} (metadata, settings) VALUES
+        ('{"name": "Item 1", "type": "product", "price": 99.99, "tags": ["new", "featured"]}', '{"theme": "dark", "notifications": true}'),
+        ('{"name": "Item 2", "type": "service", "price": 149.99, "description": "Premium service"}', '{"theme": "light", "notifications": false, "language": "en"}'),
+        ('{"name": "Item 3", "type": "product", "price": 49.99, "tags": ["sale"], "discount": 10}', '{"theme": "dark"}'),
+        ('{"name": "Item 4", "type": "bundle", "items": [{"id": 1, "qty": 2}, {"id": 2, "qty": 1}]}', '{"theme": "auto", "notifications": true}'),
+        ('{"name": "Item 5", "type": "product", "price": null, "tags": []}', null),
+        ('{"name": "Item 6", "nested": {"category": "electronics", "subcategory": {"name": "phones", "id": 123}}}', '{"advanced": {"api_key": "secret", "rate_limit": 100}}')
+      `);
+    });
+
+    test('should include JSONB columns in schema JSON output', async () => {
+      const result = await execSequelae(['schema', JSONB_TABLE]);
+      expect(result.code).toBe(0);
+      expect(result.json).toBeDefined();
+
+      const json = result.json as any;
+      expect(json.success).toBe(true);
+      expect(json.rows).toBeDefined();
+
+      // Find our table in the results
+      const tableRow = json.rows.find((r: any) => r.table_name === JSONB_TABLE);
+      expect(tableRow).toBeDefined();
+      expect(tableRow.columns).toBeDefined();
+
+      // Parse columns and check JSONB types
+      const columns = JSON.parse(tableRow.columns);
+      const metadataColumn = columns.find((c: any) => c.column_name === 'metadata');
+      const settingsColumn = columns.find((c: any) => c.column_name === 'settings');
+
+      expect(metadataColumn).toBeDefined();
+      expect(metadataColumn.data_type).toBe('jsonb');
+
+      expect(settingsColumn).toBeDefined();
+      expect(settingsColumn.data_type).toBe('jsonb');
+    });
+
+    test('should handle JSONB columns properly in JSON output', async () => {
+      // Create empty table
+      const EMPTY_JSONB_TABLE = 'empty_jsonb_e2e_test_sequelae';
+      await pool.query(`DROP TABLE IF EXISTS ${EMPTY_JSONB_TABLE}`);
+      await pool.query(`
+        CREATE TABLE ${EMPTY_JSONB_TABLE} (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          data jsonb
+        )
+      `);
+
+      const result = await execSequelae(['schema', EMPTY_JSONB_TABLE]);
+      expect(result.code).toBe(0);
+      expect(result.json).toBeDefined();
+
+      const json = result.json as any;
+      const tableRow = json.rows.find((r: any) => r.table_name === EMPTY_JSONB_TABLE);
+      expect(tableRow).toBeDefined();
+
+      const columns = JSON.parse(tableRow.columns);
+      const dataColumn = columns.find((c: any) => c.column_name === 'data');
+      expect(dataColumn.data_type).toBe('jsonb');
+
+      // Clean up
+      await pool.query(`DROP TABLE ${EMPTY_JSONB_TABLE}`);
     });
   });
 });

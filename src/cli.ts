@@ -837,13 +837,11 @@ async function main(): Promise<void> {
                   10
                 );
 
-                if (samples.length > 0) {
-                  const structure = analyzeJsonStructure(samples);
-                  const formatted = formatJsonStructure(structure);
-                  if (formatted.trim()) {
-                    cliOutput.log(`      Structure of ${column.column_name}:`);
-                    cliOutput.log(formatted);
-                  }
+                const structure = analyzeJsonStructure(samples);
+                const formatted = formatJsonStructure(structure);
+                if (formatted.trim()) {
+                  cliOutput.log(`      Structure of ${column.column_name}:`);
+                  cliOutput.log(formatted);
                 }
               }
             } finally {
