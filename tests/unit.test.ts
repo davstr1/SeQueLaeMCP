@@ -1,4 +1,3 @@
-import { spawn } from 'child_process';
 import { PoolManager } from '../src/core/pool-manager';
 import {
   handleVersion,
@@ -30,45 +29,7 @@ import { analyzeJsonStructure, formatJsonStructure } from '../src/jsonb-analyzer
 
 describe('Sequelae Unit Tests', () => {
   // Helper function to execute sequelae CLI
-  async function execSequelae(
-    args: string[]
-  ): Promise<{ stdout: string; stderr: string; code: number; json?: any }> {
-    return new Promise((resolve, reject) => {
-      const binPath = require.resolve('../bin/sequelae');
-      const proc = spawn('node', [binPath, ...args], {
-        cwd: process.cwd(),
-        env: {
-          ...process.env,
-          POSTGRES_SSL_REJECT_UNAUTHORIZED: 'false', // Match test SSL settings
-          POSTGRES_SSL_MODE: process.env.POSTGRES_SSL_MODE || 'disable',
-          DATABASE_URL: process.env.DATABASE_URL,
-        },
-      });
-
-      let stdout = '';
-      let stderr = '';
-
-      proc.stdout.on('data', data => {
-        stdout += data.toString();
-      });
-
-      proc.stderr.on('data', data => {
-        stderr += data.toString();
-      });
-
-      proc.on('close', code => {
-        let json;
-        try {
-          json = stdout ? JSON.parse(stdout) : undefined;
-        } catch (_e) {
-          // Not JSON output
-        }
-        resolve({ stdout, stderr, code: code || 0, json });
-      });
-
-      proc.on('error', reject);
-    });
-  }
+  // execSequelae helper moved to cli-behavior.test.ts
 
   describe('Direct Function Tests', () => {
     describe('handleVersion', () => {
@@ -715,146 +676,13 @@ SELECT * FROM users;`;
   });
 
   describe('CLI Argument Parsing', () => {
-    test('should show help with --help flag', async () => {
-      const result = await execSequelae(['--help']);
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('Usage:');
-      expect(result.stdout).toContain('sequelae exec "SQL query"');
-      expect(result.stdout).toContain('sequelae file path/to/query.sql');
-    });
-
-    test('should show help with -h flag', async () => {
-      const result = await execSequelae(['-h']);
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('Usage:');
-    });
-
-    test('should handle --json flag with help', async () => {
-      const result = await execSequelae(['--json', '--help']);
-      expect(result.code).toBe(0);
-      expect(result.json).toBeDefined();
-      expect((result.json as any).usage).toBeDefined();
-      expect(Array.isArray((result.json as any).usage)).toBe(true);
-    });
-
-    test('should error when no command provided', async () => {
-      const result = await execSequelae([]);
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain('No command provided');
-    });
-
-    test('should error when unknown command provided', async () => {
-      const result = await execSequelae(['unknown']);
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain('Unknown command');
-    });
-
-    test('should handle missing SQL query for exec command', async () => {
-      const result = await execSequelae(['exec']);
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain('No SQL query provided');
-    });
-
-    test('should handle missing file path for file command', async () => {
-      const result = await execSequelae(['file']);
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain('No file path provided');
-    });
-
-    test('should handle exit command', async () => {
-      const result = await execSequelae(['exit']);
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('Goodbye!');
-    });
-
-    test('should handle quit command', async () => {
-      const result = await execSequelae(['quit']);
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('Goodbye!');
-    });
-
-    test('should show version with --version flag', async () => {
-      const result = await execSequelae(['--version']);
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('sequelae-mcp v');
-    });
-
-    test('should show version with -v flag', async () => {
-      const result = await execSequelae(['-v']);
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('sequelae-mcp v');
-    });
+    // Help tests moved to cli-behavior.test.ts
+    // CLI behavior tests moved to cli-behavior.test.ts
   });
 
-  describe('Error Output Formatting', () => {
-    test('should format errors as JSON when --json flag is used', async () => {
-      const result = await execSequelae(['--json', 'exec']);
-      expect(result.code).toBe(1);
-      expect(result.json).toBeDefined();
-      expect((result.json as any).error).toBeDefined();
-      expect(typeof (result.json as any).error).toBe('string');
-    });
+  // Error output formatting tests moved to cli-behavior.test.ts
 
-    test('should output plain text errors without --json flag', async () => {
-      const result = await execSequelae(['exec']);
-      expect(result.code).toBe(1);
-      expect(result.stderr).toBeTruthy();
-      expect(result.json).toBeUndefined();
-    });
-
-    test('should handle file not found error', async () => {
-      const result = await execSequelae(['file', '/tmp/non-existent-file.sql']);
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain('File not found');
-    });
-
-    test('should handle file not found error in JSON mode', async () => {
-      const result = await execSequelae(['--json', 'file', '/tmp/non-existent-file.sql']);
-      expect(result.code).toBe(1);
-      expect(result.json).toBeDefined();
-      expect((result.json as any).error).toContain('File not found');
-    });
-  });
-
-  describe('SQL Execution (with DATABASE_URL)', () => {
-    // These tests assume DATABASE_URL is set in .env or environment
-    // They will be skipped if no database is configured
-
-    test('should execute simple SELECT', async () => {
-      const result = await execSequelae(['exec', 'SELECT 1 as num']);
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('num');
-    });
-
-    test('should execute SQL with --json flag', async () => {
-      const result = await execSequelae(['--json', 'exec', 'SELECT 1 as num']);
-      expect(result.code).toBe(0);
-      expect(result.json).toBeDefined();
-      expect((result.json as any).success).toBe(true);
-      expect((result.json as any).rows).toHaveLength(1);
-      expect((result.json as any).rows[0].num).toBe(1);
-    });
-
-    test('should handle SQL syntax errors', async () => {
-      const result = await execSequelae(['exec', 'SELECT * FORM users']);
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain('syntax error');
-    });
-
-    test('should handle SQL syntax errors in JSON mode', async () => {
-      const result = await execSequelae(['--json', 'exec', 'SELECT * FORM users']);
-      expect(result.code).toBe(1);
-      expect(result.json).toBeDefined();
-      expect((result.json as any).success).toBe(false);
-      expect((result.json as any).error).toContain('syntax error');
-    });
-
-    test('should execute direct SQL without exec command', async () => {
-      const result = await execSequelae(['SELECT', '1', 'as', 'num']);
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('num');
-    });
-  });
+  // SQL execution tests moved to cli-integration.test.ts
 
   describe('Backup functionality', () => {
     const mockConnectionString = 'postgresql://user:pass@localhost:5432/testdb';

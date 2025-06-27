@@ -14,21 +14,6 @@ jobs:
       matrix:
         node-version: [18.x, 20.x]
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - uses: actions/checkout@v4
 
@@ -51,10 +36,7 @@ jobs:
         run: npm run build
 
       - name: Run tests with coverage
-        env:
-          DATABASE_URL: postgresql://test:test@127.0.0.1:5432/test_db
-          POSTGRES_SSL_MODE: disable
-        run: npm test -- --coverage --coverageReporters=text --coverageReporters=lcov
+        run: npm run test:ci -- --coverage --coverageReporters=text --coverageReporters=lcov
 
       - name: Upload coverage reports to Codecov
         if: matrix.node-version == '18.x'
