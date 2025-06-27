@@ -9,7 +9,7 @@ sequelae-mcp is an MCP-enabled PostgreSQL tool that lets AI assistants execute S
 ## User Commands (prefix with --):
 
 --GCP  
-Check if changes to the codebase, then if yes Commit and push all staged changes.
+Check git status then if any changes, add Commit and push all changes.
 
 --MIND  
 Before any action, remind yourself:  

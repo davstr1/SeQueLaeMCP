@@ -26,6 +26,7 @@ import {
 } from '../src/cli';
 import { SqlExecutor } from '../src/core/sql-executor';
 import { BackupOptions } from '../src/types/backup';
+import { analyzeJsonStructure, formatJsonStructure } from '../src/jsonb-analyzer';
 
 describe('Sequelae Unit Tests', () => {
   // Helper function to execute sequelae CLI
@@ -1009,6 +1010,145 @@ describe('PoolManager', () => {
 
       await expect(poolManager.getClient(2, 10)).rejects.toThrow('Connection failed');
       expect(mockPool.connect).toHaveBeenCalledTimes(2);
+    });
+  });
+});
+
+describe('JSONB Analyzer', () => {
+  describe('analyzeJsonStructure', () => {
+    test('should analyze simple flat object', () => {
+      const samples = [
+        { name: 'John', age: 30 },
+        { name: 'Jane', age: 25 },
+      ];
+      const structure = analyzeJsonStructure(samples);
+
+      expect(structure.name).toBeDefined();
+      expect(Array.from(structure.name.types)).toEqual(['string']);
+      expect(structure.name.optional).toBe(false);
+
+      expect(structure.age).toBeDefined();
+      expect(Array.from(structure.age.types)).toEqual(['number']);
+      expect(structure.age.optional).toBe(false);
+    });
+
+    test('should detect optional fields', () => {
+      const samples = [
+        { name: 'John', age: 30, email: 'john@example.com' },
+        { name: 'Jane', age: 25 },
+      ];
+      const structure = analyzeJsonStructure(samples);
+
+      expect(structure.email.optional).toBe(true);
+      expect(structure.name.optional).toBe(false);
+      expect(structure.age.optional).toBe(false);
+    });
+
+    test('should handle mixed types', () => {
+      const samples = [{ value: 'string' }, { value: 123 }, { value: null }];
+      const structure = analyzeJsonStructure(samples);
+
+      expect(Array.from(structure.value.types).sort()).toEqual(['null', 'number', 'string']);
+    });
+
+    test('should analyze arrays', () => {
+      const samples = [{ tags: ['a', 'b', 'c'] }, { tags: ['d', 'e'] }];
+      const structure = analyzeJsonStructure(samples);
+
+      expect(Array.from(structure.tags.types)).toEqual(['array']);
+      expect(Array.from(structure.tags.arrayElementTypes!)).toEqual(['string']);
+    });
+
+    test('should analyze arrays with mixed element types', () => {
+      const samples = [{ scores: [1, 2, 3] }, { scores: [4, 'high', null] }];
+      const structure = analyzeJsonStructure(samples);
+
+      expect(Array.from(structure.scores.types)).toEqual(['array']);
+      expect(Array.from(structure.scores.arrayElementTypes!).sort()).toEqual([
+        'null',
+        'number',
+        'string',
+      ]);
+    });
+
+    test('should analyze nested objects', () => {
+      const samples = [
+        { user: { name: 'John', address: { city: 'NYC', zip: '10001' } } },
+        { user: { name: 'Jane', address: { city: 'LA', zip: '90001' } } },
+      ];
+      const structure = analyzeJsonStructure(samples);
+
+      expect(structure.user).toBeDefined();
+      expect(Array.from(structure.user.types)).toEqual(['object']);
+      expect(structure.user.nestedStructure).toBeDefined();
+      expect(structure.user.nestedStructure!.name).toBeDefined();
+      expect(structure.user.nestedStructure!.address).toBeDefined();
+      expect(structure.user.nestedStructure!.address.nestedStructure!.city).toBeDefined();
+    });
+
+    test('should handle empty samples', () => {
+      const structure = analyzeJsonStructure([]);
+      expect(Object.keys(structure)).toHaveLength(0);
+    });
+
+    test('should handle non-object samples', () => {
+      const samples = ['string', 123, null, ['array']];
+      const structure = analyzeJsonStructure(samples);
+      expect(Object.keys(structure)).toHaveLength(0);
+    });
+  });
+
+  describe('formatJsonStructure', () => {
+    test('should format simple structure', () => {
+      const structure = analyzeJsonStructure([
+        { name: 'John', age: 30 },
+        { name: 'Jane', age: 25 },
+      ]);
+      const formatted = formatJsonStructure(structure);
+
+      expect(formatted).toContain('- name: string');
+      expect(formatted).toContain('- age: number');
+    });
+
+    test('should show optional fields', () => {
+      const structure = analyzeJsonStructure([
+        { name: 'John', email: 'john@example.com' },
+        { name: 'Jane' },
+      ]);
+      const formatted = formatJsonStructure(structure);
+
+      expect(formatted).toContain('- name: string');
+      expect(formatted).toContain('- email?: string');
+    });
+
+    test('should format arrays', () => {
+      const structure = analyzeJsonStructure([{ tags: ['a', 'b'] }, { tags: ['c'] }]);
+      const formatted = formatJsonStructure(structure);
+
+      expect(formatted).toContain('- tags: array<string>');
+    });
+
+    test('should format mixed types', () => {
+      const structure = analyzeJsonStructure([{ value: 'string' }, { value: 123 }]);
+      const formatted = formatJsonStructure(structure);
+
+      expect(formatted).toContain('- value: string | number');
+    });
+
+    test('should format nested objects with indentation', () => {
+      const structure = analyzeJsonStructure([{ user: { name: 'John', age: 30 } }]);
+      const formatted = formatJsonStructure(structure);
+
+      expect(formatted).toContain('- user: object');
+      expect(formatted).toContain('  - name: string');
+      expect(formatted).toContain('  - age: number');
+    });
+
+    test('should handle empty structure', () => {
+      const structure = analyzeJsonStructure([]);
+      const formatted = formatJsonStructure(structure);
+
+      expect(formatted).toBe('    (no data to analyze)');
     });
   });
 });
