@@ -64,7 +64,9 @@ describeWithDb('Sequelae E2E Tests', () => {
         cwd: process.cwd(),
         env: {
           ...process.env,
-          POSTGRES_SSL_REJECT_UNAUTHORIZED: 'false', // Match test pool SSL settings
+          POSTGRES_SSL_REJECT_UNAUTHORIZED: 'false',
+          POSTGRES_SSL_MODE: process.env.POSTGRES_SSL_MODE || 'disable',
+          DATABASE_URL: process.env.DATABASE_URL,
         },
       });
 

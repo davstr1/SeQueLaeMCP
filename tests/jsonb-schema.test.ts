@@ -76,6 +76,8 @@ describeWithDb('JSONB Schema Text Output Tests', () => {
         env: {
           ...process.env,
           POSTGRES_SSL_REJECT_UNAUTHORIZED: 'false',
+          POSTGRES_SSL_MODE: process.env.POSTGRES_SSL_MODE || 'disable',
+          DATABASE_URL: process.env.DATABASE_URL,
         },
       });
 
@@ -100,6 +102,9 @@ describeWithDb('JSONB Schema Text Output Tests', () => {
 
   test('should show JSONB structure in text schema output', async () => {
     const result = await execSequelaeText(['schema', JSONB_TABLE]);
+    if (result.code !== 0) {
+      console.error('Command failed with:', { stderr: result.stderr, stdout: result.stdout });
+    }
     expect(result.code).toBe(0);
 
     const output = result.stdout;

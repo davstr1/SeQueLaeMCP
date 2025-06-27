@@ -15,7 +15,13 @@ describe('Dual Mode Entry Point', () => {
   }> {
     return new Promise((resolve, reject) => {
       const proc = spawn('node', [binPath, ...args], {
-        env: { ...process.env, ...env },
+        env: {
+          ...process.env,
+          ...env,
+          POSTGRES_SSL_REJECT_UNAUTHORIZED: 'false',
+          POSTGRES_SSL_MODE: process.env.POSTGRES_SSL_MODE || 'disable',
+          DATABASE_URL: process.env.DATABASE_URL,
+        },
       });
 
       let stdout = '';
@@ -59,7 +65,14 @@ describe('Dual Mode Entry Point', () => {
 
   describe('MCP Mode', () => {
     test('should run in MCP mode with --mcp flag', async () => {
-      const proc = spawn('node', [binPath, '--mcp']);
+      const proc = spawn('node', [binPath, '--mcp'], {
+        env: {
+          ...process.env,
+          POSTGRES_SSL_REJECT_UNAUTHORIZED: 'false',
+          POSTGRES_SSL_MODE: process.env.POSTGRES_SSL_MODE || 'disable',
+          DATABASE_URL: process.env.DATABASE_URL,
+        },
+      });
 
       let stdout = '';
       let gotResponse = false;
@@ -101,7 +114,13 @@ describe('Dual Mode Entry Point', () => {
 
     test('should run in MCP mode with MCP_MODE env var', async () => {
       const proc = spawn('node', [binPath], {
-        env: { ...process.env, MCP_MODE: 'true' },
+        env: {
+          ...process.env,
+          MCP_MODE: 'true',
+          POSTGRES_SSL_REJECT_UNAUTHORIZED: 'false',
+          POSTGRES_SSL_MODE: process.env.POSTGRES_SSL_MODE || 'disable',
+          DATABASE_URL: process.env.DATABASE_URL,
+        },
       });
 
       let stdout = '';
