@@ -76,13 +76,21 @@
 
 ## High-Value Test Additions
 
-### 1. Integration Tests for Backup
+### 1. Unit Tests for Backup (No DB Required)
 ```typescript
-describe('Backup Integration', () => {
+// In tests/backup.test.ts (UNIT TEST - runs in CI)
+describe('Backup Command', () => {
   test('should create backup with pg_dump', async () => {
-    // Mock spawn to simulate pg_dump
+    // Mock spawn to simulate pg_dump - NO REAL DB CONNECTION
     const mockSpawn = jest.spyOn(child_process, 'spawn');
-    // Test backup creation
+    mockSpawn.mockImplementation(() => {
+      // Simulate successful pg_dump execution
+      const proc = new EventEmitter() as any;
+      proc.stderr = new EventEmitter();
+      setTimeout(() => proc.emit('close', 0), 100);
+      return proc;
+    });
+    // Test backup creation without real database
   });
 });
 ```
@@ -98,8 +106,11 @@ describe('Transaction Error Recovery', () => {
 
 ### 3. CLI Direct SQL Tests
 ```typescript
+// In tests/cli-behavior.test.ts (UNIT TEST with mocked DB)
 describe('Direct SQL Commands', () => {
-  test('should execute SELECT without exec prefix', async () => {
+  test('should recognize SELECT without exec prefix', async () => {
+    // Mock DATABASE_URL to avoid real connection
+    process.env.DATABASE_URL = 'postgresql://mock:mock@localhost:5432/mock';
     const result = await execSequelae(['SELECT', '1']);
     expect(result.code).toBe(0);
   });
@@ -129,7 +140,15 @@ describe('File Operations', () => {
 - Invalid SQL syntax
 - Network timeouts
 
-### 3. Parameterized Tests
+### 3. Integration Test Isolation
+**CRITICAL**: Integration tests requiring real database connections must:
+- Be placed in separate test files (e.g., `*.integration.test.ts`)
+- Be excluded from CI runs (`npm run test:ci` only runs unit tests)
+- Only run locally with `npm run test:integration`
+- Never run in GitHub Actions or npm publish workflows
+- Use the `describeWithDb` helper from test-utils.ts
+
+### 4. Parameterized Tests
 ```typescript
 test.each([
   ['plain', '--format plain'],
@@ -140,11 +159,26 @@ test.each([
 });
 ```
 
+## Test Organization
+
+### Unit Tests (Run in CI)
+- Place in: `tests/*.test.ts` (excluding `*.integration.test.ts`)
+- Mock all external dependencies
+- No real database connections
+- Run with: `npm run test:unit` or `npm run test:ci`
+
+### Integration Tests (Local Only)
+- Place in: `tests/*.integration.test.ts`
+- Require real PostgreSQL database
+- Use `describeWithDb` helper
+- Run with: `npm run test:integration`
+- **NEVER run in GitHub Actions**
+
 ## Recommended Test Priority
 
-1. **Backup functionality** - Critical for data safety
+1. **Backup functionality** - Critical for data safety (mock pg_dump in unit tests)
 2. **Error handling paths** - Improves user experience  
-3. **Transaction rollback** - Ensures data integrity
+3. **Transaction rollback** - Ensures data integrity (mock in unit tests)
 4. **Direct SQL commands** - Common usage pattern
 5. **MCP tool responses** - AI agent integration
 
