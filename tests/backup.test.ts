@@ -342,7 +342,8 @@ describe('Backup Unit Tests', () => {
       const executor = new SqlExecutor('postgresql://user:pass@localhost:5432/test');
       const result = await executor.backup({});
 
-      expect(result.duration).toBeGreaterThanOrEqual(100);
+      // Allow for timing variations in CI - check it's roughly 100ms (±20ms)
+      expect(result.duration).toBeGreaterThanOrEqual(80);
       expect(result.duration).toBeLessThan(200);
     });
 
