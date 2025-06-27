@@ -40,13 +40,11 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run unit tests
-        run: npm run test:unit
-
-      - name: Run integration tests
+      - name: Run tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/test_db
-        run: npm run test:integration
+          POSTGRES_SSL_MODE: disable
+        run: npm test
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v3
